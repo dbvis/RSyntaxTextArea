@@ -469,18 +469,18 @@ public class TokenImpl implements Token {
 
 			FontMetrics fm = textArea.getFontMetricsForTokenType(token.getType());
 
-//			long started = System.currentTimeMillis();
+			// long started = System.currentTimeMillis();
 			MyTabConverter cvt = new MyTabConverter(tabSize, token);
 			char[] cvtText = cvt.getConvertedLine();
 			int cvtOffset = cvt.getTokenTextOffset();
 			int cvtCount = cvt.getTokenTextCount();
 
 			nextX = nextX + fm.charsWidth(cvtText, cvtOffset, cvtCount);
-			if ( x < nextX) {
+			if (x < nextX) {
 				int offset = getListOffsetForToken(fm, cvtText, cvtOffset, cvtCount, stableX, x);
 				if (offset>=0) {
 					offset = cvt.toTabbedOffset(offset);
-//					System.out.printf("DONE: offset=%,d [%,d ms]%n", offset, System.currentTimeMillis()-started);
+					// System.out.printf("DONE: offset=%,d [%,d ms]%n", offset, System.currentTimeMillis()-started);
 					return offset;
 				}
 			}
@@ -497,7 +497,8 @@ public class TokenImpl implements Token {
 	}
 
 	int getListOffsetForToken(FontMetrics fm, char[] text, int first, int length, float x0, float x) {
-		assert String.copyValueOf(text).indexOf('\t')<0 : "Text must not contain any tab characters: " + String.copyValueOf(text);
+		assert String.copyValueOf(text).indexOf('\t')<0 :
+			"Text must not contain any tab characters: " + String.copyValueOf(text);
 
 		int width = fm.charsWidth(text, first, length);
 		int xLast = (int) x0 + width;
@@ -1067,6 +1068,7 @@ public class TokenImpl implements Token {
 
 		/**
 		 * Calculate the number of spaces required to fill the text to next tab stop.
+		 *
 		 * @param offsetOnLine the position on the line
 		 * @return zero to {@link #tabSize}
 		 */
@@ -1087,7 +1089,7 @@ public class TokenImpl implements Token {
 		static int findStartOfLine(char[] text, int offset) {
 			for (int i = offset; i > 0; i--) {
 				char ch = text[i];
-				// accept "any" line separator rather than the  system line separator, we don't know how text was created
+				// accept "any" line separator rather than system line separator (we don't know how text was created)
 				if (ch == '\n' || ch == '\r') {
 					return i + 1;
 				}
