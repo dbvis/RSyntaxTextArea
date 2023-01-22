@@ -1042,10 +1042,10 @@ public class TokenImpl implements Token {
 		}
 
 		/**
-		 * Map supplied offset from offset in the converted (tabless) text back to an offset in the original text with
+		 * Map supplied offset from offset in the converted (tab free) text back to an offset in the original text with
 		 * respect to expanded tabs. Loop over original text from the start of the line and expand tabs, adding the
-		 * fillers to the converted index until we reach the desired offset.
-		 * At that point, the index in the original text represents the corresponding offset in the converted text.
+		 * fillers to the converted index until we reach the desired offset. At that point, the index in the original
+		 * text represents the corresponding offset in the converted text.
 		 *
 		 * @param offsetInConvertedText     the offset into the array where tabs are expanded to whitespace
 		 * @return an integer reflecting the offset in the original character array with tab characters
@@ -1083,7 +1083,7 @@ public class TokenImpl implements Token {
 		 * of that position.
 		 *
 		 * @param text   the text to scan
-		 * @param offset where to start lookinh
+		 * @param offset where to start looking
 		 * @return the offset of the first character of the line
 		 */
 		static int findStartOfLine(char[] text, int offset) {
