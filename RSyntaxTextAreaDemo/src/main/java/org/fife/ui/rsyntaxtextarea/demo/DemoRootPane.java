@@ -4,7 +4,7 @@
  */
 package org.fife.ui.rsyntaxtextarea.demo;
 
-import java.awt.BorderLayout;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -43,8 +43,8 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 	DemoRootPane() {
 		textArea = createTextArea();
-		setText("JavaExample.txt");
-		textArea.setSyntaxEditingStyle(SYNTAX_STYLE_JAVA);
+		textArea.setSyntaxEditingStyle(SYNTAX_STYLE_NONE);
+		textArea.setTabSize(4);
 		scrollPane = new RTextScrollPane(textArea, true);
 		Gutter gutter = scrollPane.getGutter();
 		gutter.setBookmarkingEnabled(true);
@@ -122,10 +122,11 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		addSyntaxItem("Python",  "PythonExample.txt", SYNTAX_STYLE_PYTHON, bg, menu);
 		addSyntaxItem("Ruby", "RubyExample.txt", SYNTAX_STYLE_RUBY, bg, menu);
 		addSyntaxItem("SQL",  "SQLExample.txt", SYNTAX_STYLE_SQL, bg, menu);
+		addSyntaxItem("Text",  "TextExample.txt", SYNTAX_STYLE_NONE, bg, menu);
+		addSyntaxItem("Text Alignment",  "TextAlignmentExample.txt", SYNTAX_STYLE_NONE, bg, menu);
 		addSyntaxItem("TypeScript", "TypeScriptExample.txt", SYNTAX_STYLE_TYPESCRIPT, bg, menu);
 		addSyntaxItem("XML",  "XMLExample.txt", SYNTAX_STYLE_XML, bg, menu);
 		addSyntaxItem("YAML", "YamlExample.txt", SYNTAX_STYLE_YAML, bg, menu);
-		menu.getItem(2).setSelected(true);
 		mb.add(menu);
 
 		menu = new JMenu("View");
@@ -165,6 +166,8 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		menu.add(cbItem);
 		cbItem = new JCheckBoxMenuItem(new TabLinesAction());
 		menu.add(cbItem);
+		cbItem = new JCheckBoxMenuItem(new WhitespaceVisibleAction());
+		menu.add(cbItem);
 		mb.add(menu);
 
 		menu = new JMenu("LookAndFeel");
@@ -186,6 +189,23 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		addThemeItem("IDEA", "idea.xml", bg, menu);
 		addThemeItem("Visual Studio", "vs.xml", bg, menu);
 		mb.add(menu);
+
+		JComboBox<Font> fontCombo = new JComboBox<>();
+		fontCombo.addItemListener(e -> textArea.setFont((Font) e.getItem()));
+		fontCombo.setRenderer((list, font, index, isSelected, cellHasFocus) -> new JLabel(font.getFontName()));
+		String[] fontFamilyNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+		String longestFontName = "";
+		for (String name : fontFamilyNames) {
+			Font font = new Font(name, Font.PLAIN, 12);
+			fontCombo.addItem(font);
+			if (name.length()>longestFontName.length()) {
+				longestFontName = name;
+			}
+		}
+		Font appFont = new JLabel().getFont();
+		int fontWidth = getFontMetrics(appFont).stringWidth(longestFontName);
+		fontCombo.setMaximumSize(new Dimension(fontWidth, appFont.getSize() * 40));
+		mb.add(fontCombo);
 
 		menu = new JMenu("Help");
 		JMenuItem item = new JMenuItem(new AboutAction());
@@ -545,6 +565,24 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 	}
 
+	/**
+	 * Toggles line number visibility.
+	 */
+	private class WhitespaceVisibleAction extends AbstractAction {
+
+		private boolean selected;
+
+		WhitespaceVisibleAction() {
+			putValue(NAME, "Whitespace");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			selected = !selected;
+			textArea.setWhitespaceVisible(selected);
+		}
+
+	}
 	/**
 	 * Toggles word wrap.
 	 */
