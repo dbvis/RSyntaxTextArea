@@ -1003,7 +1003,7 @@ public class TokenImpl implements Token {
 		public MyTabConverter(int tabSize, TokenImpl token) {
 			this.tabSize = tabSize;
 			this.text = token.text;
-			this.tokenTextOffset = token.textOffset;
+			this.tokenTextOffset = token.getOffset();
 			this.tokenTextCount = token.textCount;
 			this.lineOffset = findStartOfLine(text, tokenTextOffset);
 			this.convertedLine = convert();
