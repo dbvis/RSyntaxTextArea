@@ -190,21 +190,15 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		addThemeItem("Visual Studio", "vs.xml", bg, menu);
 		mb.add(menu);
 
+		JCheckBox mono = new JCheckBox("Monospaced");
+		mono.setBackground(Color.WHITE);
+		mono.setSelected(false);
 		JComboBox<Font> fontCombo = new JComboBox<>();
 		fontCombo.addItemListener(e -> textArea.setFont((Font) e.getItem()));
 		fontCombo.setRenderer((list, font, index, isSelected, cellHasFocus) -> new JLabel(font.getFontName()));
-		String[] fontFamilyNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-		String longestFontName = "";
-		for (String name : fontFamilyNames) {
-			Font font = new Font(name, Font.PLAIN, 12);
-			fontCombo.addItem(font);
-			if (name.length()>longestFontName.length()) {
-				longestFontName = name;
-			}
-		}
-		Font appFont = new JLabel().getFont();
-		int fontWidth = getFontMetrics(appFont).stringWidth(longestFontName);
-		fontCombo.setMaximumSize(new Dimension(fontWidth, appFont.getSize() * 40));
+		fillFontCombo(fontCombo, mono.isSelected());
+		mono.addItemListener(evt->fillFontCombo(fontCombo, mono.isSelected()));
+		mb.add(mono);
 		mb.add(fontCombo);
 
 		menu = new JMenu("Help");
@@ -216,6 +210,26 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 	}
 
+	private void fillFontCombo(JComboBox<Font> fontCombo, boolean onlyMonospaced) {
+		Font appFont = new JLabel().getFont();
+		String[] fontFamilyNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+		String longestFontName = "";
+
+		fontCombo.removeAllItems();
+		for (String name : fontFamilyNames) {
+			Font font = new Font(name, Font.PLAIN, appFont.getSize());
+			if (!onlyMonospaced || RSyntaxUtilities.isMonospaced(getFontMetrics(font))) {
+				fontCombo.addItem(font);
+				if (name.length()>longestFontName.length()) {
+					longestFontName = name;
+				}
+			}
+		}
+		int fontWidth = getFontMetrics(appFont).stringWidth(longestFontName);
+		fontCombo.setMaximumSize(new Dimension(fontWidth, appFont.getSize() * 40));
+
+		fontCombo.setSelectedItem(appFont);
+	}
 
 	/**
 	 * Creates the text area for this application.
