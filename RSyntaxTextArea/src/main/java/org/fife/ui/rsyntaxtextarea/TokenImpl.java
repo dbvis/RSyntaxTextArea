@@ -462,6 +462,8 @@ public class TokenImpl implements Token {
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
 		TokenImpl token = this;
 		int last = getOffset();
+		int lineOffset = RSyntaxUtilities.findStartOfLine(textArea.getDocument(), last);
+
 
 		while (token != null && token.isPaintable()) {
 
@@ -471,7 +473,7 @@ public class TokenImpl implements Token {
 			if (isTabConversionFriendly(fm, token)) {
 
 				// fast calculation using expanded tabs
-				MyTabConverter cvt = new MyTabConverter(tabSize, token, textArea.getDocument());
+				MyTabConverter cvt = new MyTabConverter(tabSize, token, textArea.getDocument(), lineOffset);
 				String cvtTokenLine = cvt.getConvertedLine();
 				int cvtTokenOffset = cvt.getTokenOffset();
 				int cvtTokenCount = cvt.getTokenCount();
@@ -1067,16 +1069,17 @@ public class TokenImpl implements Token {
 		/**
 		 * Constructor.
 		 *
-		 * @param tabSize  the number of spaces each tab represents
-		 * @param token    the token to process
-		 * @param document containing the text of the token
+		 * @param tabSize    the number of spaces each tab represents
+		 * @param token      the token to process
+		 * @param document   containing the text of the token
+		 * @param lineOffset
 		 */
-		public MyTabConverter(int tabSize, TokenImpl token, Document document) {
+		public MyTabConverter(int tabSize, TokenImpl token, Document document, int lineOffset) {
 			this.document = document;
 			this.tabSize = tabSize;
 			this.originalOffset = token.getOffset(); // where the token resides in the document
 			this.originalEndOffset = token.getEndOffset(); // where the token ends in the document
-			this.lineOffset = findStartOfLine(document, originalOffset);
+			this.lineOffset = lineOffset;
 			this.convertedLine = convert();
 		}
 
@@ -1159,30 +1162,6 @@ public class TokenImpl implements Token {
 			int remainder = offsetOnLine % tabSize;
 			int filler = tabSize - remainder;
 			return filler;
-		}
-
-		/**
-		 * Scan the text backward from the specified offset until the start of the line is found and return the offset
-		 * of that position.
-		 *
-		 * @param doc   the text to scan
-		 * @param offset where to start looking
-		 * @return the offset of the first character of the line
-		 */
-		static int findStartOfLine(Document doc, int offset) {
-			try {
-				String text = doc.getText(0, offset); // TODO eliminate the need for copying a potentially large text chunk?
-				for (int i = offset-1; i > 0; i--) {
-					char ch = text.charAt(i);
-					// accept "any" line separator rather than system line separator (we don't know how text was created)
-					if (ch == '\n' || ch == '\r') {
-						return i + 1;
-					}
-				}
-			} catch (BadLocationException e) {
-				throw new RuntimeException(e);
-			}
-			return 0;
 		}
 
 		/**

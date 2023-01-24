@@ -1630,4 +1630,27 @@ return c.getLineStartOffset(line);
 		}
 		return isMonospaced;
 	}
+
+	/**
+	 * Scan the supplied document backward from the specified offset until the start of the line is found,
+	 * and return the offset for the first character on the line.
+	 *
+	 * @param doc   the text to scan
+	 * @param offset where to start looking
+	 * @return the offset of the first character of the line
+	 */
+	static int findStartOfLine(Document doc, int offset) {
+		try {
+			for (int i = offset-1; i > 0; i--) {
+				char ch = doc.getText(i,1).charAt(0);
+				// accept "any" line separator rather than system line separator (we don't know how text was created)
+				if (ch == '\n' || ch == '\r') {
+					return i + 1;
+				}
+			}
+		} catch (BadLocationException e) {
+			throw new RuntimeException(e);
+		}
+		return 0;
+	}
 }

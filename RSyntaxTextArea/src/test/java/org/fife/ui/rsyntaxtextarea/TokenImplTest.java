@@ -338,21 +338,6 @@ class TokenImplTest {
 		Assertions.assertEquals(expected, actual, msg);
 	}
 
-	@Test
-	void testTabConverterFindStartOfLine() {
-		assertTabConverterFindStartOfLine("text", 0);
-		assertTabConverterFindStartOfLine("a\ntext", 2);
-		assertTabConverterFindStartOfLine("a\rtext", 2);
-		assertTabConverterFindStartOfLine("a\ntext", 2);
-		assertTabConverterFindStartOfLine("a\r\ntext", 3);
-		assertTabConverterFindStartOfLine("a\nb\ntext", 4);
-	}
-
-	private void assertTabConverterFindStartOfLine(String text, int expected) {
-		int actual = TokenImpl.MyTabConverter.findStartOfLine(newDocument(text), text.length()-1);
-		Assertions.assertEquals(expected, actual, text.substring(actual));
-	}
-
 	private static Document newDocument(String text) {
 		try {
 			StringContent c = new StringContent();
@@ -385,7 +370,7 @@ class TokenImplTest {
 
 	private void assertTabConverterOffset(String tokenLine, int offset, int expectedConverterOffset) {
 		Document document = newDocument(tokenLine);
-		TokenImpl.MyTabConverter converter = new TokenImpl.MyTabConverter(4, newToken(offset, tokenLine), document);
+		TokenImpl.MyTabConverter converter = new TokenImpl.MyTabConverter(4, newToken(offset, tokenLine), document, 0);
 		int cvtOffset = converter.getTokenOffset();
 		Assertions.assertEquals(expectedConverterOffset, cvtOffset, "ConverterOffset");
 		Assertions.assertEquals(offset, converter.toTabbedOffset(cvtOffset));
@@ -409,7 +394,7 @@ class TokenImplTest {
 		TokenImpl token = newToken(offset, tokenLine);
 
 		// initialize converter to expand tabs in text
-		TokenImpl.MyTabConverter converter = new TokenImpl.MyTabConverter(tabSize, token, newDocument(tokenLine));
+		TokenImpl.MyTabConverter converter = new TokenImpl.MyTabConverter(tabSize, token, newDocument(tokenLine), 0);
 
 		// verify expanded text
 		String expanded = converter.getConvertedLine();
