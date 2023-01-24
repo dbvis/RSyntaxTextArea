@@ -8,8 +8,11 @@ package org.fife.ui.rsyntaxtextarea;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import javax.swing.text.*;
 import java.awt.*;
+import java.util.StringJoiner;
 
 
 /**
@@ -196,41 +199,127 @@ class TokenImplTest {
 		Assertions.assertFalse(token.isComment());
 	}
 
-    @Test
+	@Test
+	void testIsTabConversionFriendly() {
+		// ok if we have regular text or no tabs
+		assertIsTabConversionFriendly(true, "az\t");
+		assertIsTabConversionFriendly(true, "åäöüé");
+		assertIsTabConversionFriendly(true, "はユケンルマ");
+		assertIsTabConversionFriendly(true, "aは");
+
+		// not possible if we mix tabs with wide characters
+		assertIsTabConversionFriendly(false, "は\t");
+		assertIsTabConversionFriendly(false, "\tは");
+	}
+
+	private static void assertIsTabConversionFriendly(boolean expected, String string) {
+		char[] line = string.toCharArray();
+		TokenImpl token = new TokenImpl(line, 0, string.length()-1, 0, TokenTypes.IDENTIFIER, 0);
+		MyFontMetrics fm = new MyFontMetrics(10);
+
+		String msg = "'" + string.replace('\t', '>') + "'";
+		boolean actual = TokenImpl.isTabConversionFriendly(fm, token);
+		Assertions.assertEquals(expected, actual, msg);
+	}
+
+	@Test
+	void testGetListOffset() {
+		String[] lines = {
+			"a\tb",
+			"c\td",
+			"efghij",
+			"k\t"
+		};
+		assertGetListOffset(1 + 4, 1, 10f, lines);
+
+		// first line
+		int lineIndex = 0;
+		assertGetListOffset(0, lineIndex, 0f, lines);  // before 'a'
+		assertGetListOffset(1, lineIndex, 10f, lines); // before tab
+		assertGetListOffset(1, lineIndex, 20f, lines); // on tab
+		assertGetListOffset(1, lineIndex, 30f, lines); // on tab
+		assertGetListOffset(2, lineIndex, 40f, lines); // before 'b'
+
+		// second line
+		lineIndex = 1;
+		int lineOffset = 4;  // line 0=3 + EOL=1
+		assertGetListOffset(0 + lineOffset, lineIndex, 0f, lines);
+		assertGetListOffset(1 + lineOffset, lineIndex, 10f, lines);
+		assertGetListOffset(1 + lineOffset, lineIndex, 20f, lines);
+		assertGetListOffset(1 + lineOffset, lineIndex, 30f, lines);
+		assertGetListOffset(2 + lineOffset, lineIndex, 40f, lines);
+	}
+
+	private void assertGetListOffset(int expectedOffset, int lineIndex, float x, String[] lines) {
+		int offset = 0;
+		for (int i = 0; i < lineIndex; i++) {
+			offset += 1 + lines[i].length();
+		}
+		String tokenLine = lines[lineIndex];
+		String escapedText = escape(String.join("\n", lines));
+		String escapedTokenLine = escape(tokenLine);
+
+		float x0 = 0f;
+		int endOffset = offset + tokenLine.length();
+		TabExpander e = Mockito.mock(TabExpander.class);
+		RSyntaxTextArea rsta = new MyRSyntaxTextArea(4, 10f, lines);
+		Token tokens = rsta.getTokenListFor(offset, endOffset);
+
+		StringJoiner chars = new StringJoiner("\n");
+		for (int i = 0; i < escapedTokenLine.length(); i++) {
+			chars.add(String.format("%d='%s'", i, escapedTokenLine.charAt(i)));
+		}
+		int actualOffset = tokens.getListOffset(rsta, e, x0, x);
+		String msg = String.format("x=%.1f | line %d [%s]%n" +
+				"expected='%s' | actual='%s'%n" +
+				"%s%n",
+			x, lineIndex, escapedTokenLine,
+			escapedText.charAt(expectedOffset), escapedText.charAt(actualOffset),
+			chars);
+		Assertions.assertEquals(expectedOffset, actualOffset, msg);
+
+	}
+
+	private static String escape(String tokenLine) {
+		return tokenLine.replace('\n', '\\').replace('\t', '>');
+	}
+
+	@Test
     void testGetListOffsetForToken() {
+		String text = "0123456789";
 		float xOffset = 0;
 
 		// ideal click before character (token is first one the line)
-		assertGetListOffsetForToken(0, xOffset, 0f);
-		assertGetListOffsetForToken(1, xOffset, 10f);
-		assertGetListOffsetForToken(2, xOffset, 20f);
-		assertGetListOffsetForToken(3, xOffset, 30f);
-		assertGetListOffsetForToken(4, xOffset, 40f);
-		assertGetListOffsetForToken(5, xOffset, 50f);
-		assertGetListOffsetForToken(6, xOffset, 60f);
-		assertGetListOffsetForToken(7, xOffset, 70f);
-		assertGetListOffsetForToken(8, xOffset, 80f);
-		assertGetListOffsetForToken(9, xOffset, 90f);
+		assertGetListOffsetForToken(text, 0, xOffset, 0f);
+		assertGetListOffsetForToken(text, 1, xOffset, 10f);
+		assertGetListOffsetForToken(text, 2, xOffset, 20f);
+		assertGetListOffsetForToken(text, 3, xOffset, 30f);
+		assertGetListOffsetForToken(text, 4, xOffset, 40f);
+		assertGetListOffsetForToken(text, 5, xOffset, 50f);
+		assertGetListOffsetForToken(text, 6, xOffset, 60f);
+		assertGetListOffsetForToken(text, 7, xOffset, 70f);
+		assertGetListOffsetForToken(text, 8, xOffset, 80f);
+		assertGetListOffsetForToken(text, 9, xOffset, 90f);
 
 		// with offset (token is not first on the line)
 		xOffset = 100;
-		assertGetListOffsetForToken(0, xOffset, 100f);
-		assertGetListOffsetForToken(1, xOffset, 110f);
-		assertGetListOffsetForToken(2, xOffset, 120f);
-		assertGetListOffsetForToken(3, xOffset, 130f);
-		assertGetListOffsetForToken(4, xOffset, 140f);
-		assertGetListOffsetForToken(5, xOffset, 150f);
-		assertGetListOffsetForToken(6, xOffset, 160f);
-		assertGetListOffsetForToken(7, xOffset, 170f);
-		assertGetListOffsetForToken(8, xOffset, 180f);
-		assertGetListOffsetForToken(9, xOffset, 190f);
+		assertGetListOffsetForToken(text, 0, xOffset, 100f);
+		assertGetListOffsetForToken(text, 1, xOffset, 110f);
+		assertGetListOffsetForToken(text, 2, xOffset, 120f);
+		assertGetListOffsetForToken(text, 3, xOffset, 130f);
+		assertGetListOffsetForToken(text, 4, xOffset, 140f);
+		assertGetListOffsetForToken(text, 5, xOffset, 150f);
+		assertGetListOffsetForToken(text, 6, xOffset, 160f);
+		assertGetListOffsetForToken(text, 7, xOffset, 170f);
+		assertGetListOffsetForToken(text, 8, xOffset, 180f);
+		assertGetListOffsetForToken(text, 9, xOffset, 190f);
 
 		// click on character ("truncate")
 		xOffset = 0;
-		assertGetListOffsetForToken(0, xOffset, 5f);
-		assertGetListOffsetForToken(0, xOffset, 5.9f);
-		assertGetListOffsetForToken(9, xOffset, 95f);
-		assertGetListOffsetForToken(9, xOffset, 95.9f);
+		assertGetListOffsetForToken(text, 0, xOffset, 5f);
+		assertGetListOffsetForToken(text, 0, xOffset, 5.9f);
+		assertGetListOffsetForToken(text, 9, xOffset, 95f);
+		assertGetListOffsetForToken(text, 9, xOffset, 95.9f);
 
 		// click close to end of character ("round"") - NOT IMPLEMENTED
 		xOffset = 0;
@@ -238,15 +327,14 @@ class TokenImplTest {
 //		assertGetLargeListOffset(-1, 95.01f);
 	}
 
-	private static void assertGetListOffsetForToken(int expected, float x0, float x) {
-		char[] text = "0123456789".toCharArray();
+	private static void assertGetListOffsetForToken(String text, int expected, float x0, float x) {
 		int tokenStartOffset = 0;
-		int tokenEndOffset = text.length;
+		int tokenEndOffset = text.length();
 		FontMetrics fm = new MyFontMetrics(10f);
 
 		TokenImpl token = new TokenImpl();
 		int actual = token.getListOffsetForToken(fm, text, tokenStartOffset, tokenEndOffset, x0, x);
-		String msg = String.format("Clicked=%s - Expected: \"%s\"[%s]='%s' | Actual: %s='%s'", x, String.copyValueOf(text), expected, (expected<0 ? null : text[expected]), actual, (actual < 0 || actual >= text.length ? null : text[actual]));
+		String msg = String.format("Clicked=%s - Expected: \"%s\"[%s]='%s' | Actual: %s='%s'", x, text, expected, (expected<0 ? null : text.substring(expected, expected+1)), actual, (actual < 0 || actual >= text.length() ? null : text.substring(actual, actual+1)));
 		Assertions.assertEquals(expected, actual, msg);
 	}
 
@@ -261,8 +349,46 @@ class TokenImplTest {
 	}
 
 	private void assertTabConverterFindStartOfLine(String text, int expected) {
-		int actual = TokenImpl.MyTabConverter.findStartOfLine(text.toCharArray(), text.length()-1);
+		int actual = TokenImpl.MyTabConverter.findStartOfLine(newDocument(text), text.length()-1);
 		Assertions.assertEquals(expected, actual, text.substring(actual));
+	}
+
+	private static Document newDocument(String text) {
+		try {
+			StringContent c = new StringContent();
+			c.insertString(0, text);
+			Document doc = new PlainDocument(c);
+			return doc;
+		} catch (BadLocationException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Test
+	void testTabConverterOffset() {
+		String text = "a\tab\tabc\tabcd\t";
+		assertTabConverterOffset(text, 0, 0);
+		assertTabConverterOffset(text, 1, 1); // first tab
+		assertTabConverterOffset(text, 2, 4);
+		assertTabConverterOffset(text, 3, 5);
+		assertTabConverterOffset(text, 4, 6); // second tab
+		assertTabConverterOffset(text, 5, 8);
+		assertTabConverterOffset(text, 6, 9);
+		assertTabConverterOffset(text, 7, 10);
+		assertTabConverterOffset(text, 8, 11); // third tab
+		assertTabConverterOffset(text, 9, 12);
+		assertTabConverterOffset(text, 10, 13);
+		assertTabConverterOffset(text, 11, 14);
+		assertTabConverterOffset(text, 12, 15);
+		assertTabConverterOffset(text, 13, 16); // fourth tab
+	}
+
+	private void assertTabConverterOffset(String tokenLine, int offset, int expectedConverterOffset) {
+		Document document = newDocument(tokenLine);
+		TokenImpl.MyTabConverter converter = new TokenImpl.MyTabConverter(4, newToken(offset, tokenLine), document);
+		int cvtOffset = converter.getTokenOffset();
+		Assertions.assertEquals(expectedConverterOffset, cvtOffset, "ConverterOffset");
+		Assertions.assertEquals(offset, converter.toTabbedOffset(cvtOffset));
 	}
 
 	@Test
@@ -280,28 +406,41 @@ class TokenImplTest {
 
 	private static void assertTabConverter(String tokenLine, int offset, String expectedTokenText) {
 		int tabSize = 4;
-		char[] text = tokenLine.toCharArray();
-		int length = tokenLine.length() - offset;
-
-		TokenImpl token = new TokenImpl();
-		token.textOffset=offset;
-		token.textCount= length;
-		token.text = text;
+		TokenImpl token = newToken(offset, tokenLine);
 
 		// initialize converter to expand tabs in text
-		TokenImpl.MyTabConverter converter = new TokenImpl.MyTabConverter(tabSize, token);
+		TokenImpl.MyTabConverter converter = new TokenImpl.MyTabConverter(tabSize, token, newDocument(tokenLine));
 
 		// verify expanded text
-		char[] expanded = converter.getConvertedLine();
-		int cvtOffset = converter.getTokenTextOffset();
-		int cvtCount = converter.getTokenTextCount();
+		String expanded = converter.getConvertedLine();
+		int cvtOffset = converter.getTokenOffset();
+		int cvtCount = converter.getTokenCount();
 
-		String actualTokenText = String.copyValueOf(expanded, cvtOffset, cvtCount);
+		String actualTokenText = expanded.substring(cvtOffset, cvtOffset+cvtCount);
 		Assertions.assertEquals(expectedTokenText, actualTokenText);
 
 		// verify original offset, simulating a click on the token start (cvtOffset)
 		int actualOffset = converter.toTabbedOffset(cvtOffset);
-		Assertions.assertEquals(offset, actualOffset, String.copyValueOf(text));
+		Assertions.assertEquals(offset, actualOffset, tokenLine);
+	}
+
+	/**
+	 * Create a simple token for testing text on a single line.
+	 * Token starts at the specified offset and ends at the end of the supplied line.
+	 *
+	 * @param offset in document and text
+	 * @param tokenLine a single line of text where the token sits
+	 * @return a Token that works for simple cases.
+	 */
+	private static TokenImpl newToken(int offset, String tokenLine) {
+		char[] text = tokenLine.toCharArray();
+		int begin = offset;
+		int end = tokenLine.length() - 1;
+		int startOffset = offset;
+		int languageIndex = 0;
+		TokenImpl token = new TokenImpl(text, begin, end, startOffset, TokenTypes.IDENTIFIER, languageIndex);
+		Assertions.assertEquals(token.getLexeme(), tokenLine.substring(offset), "Bad test setup");
+		return token;
 	}
 
 	private static class MyFontMetrics extends FontMetrics {
@@ -313,8 +452,34 @@ class TokenImplTest {
 		}
 
 		@Override
+		public int charWidth(char ch) {
+			return (int) fixedCharacterWidth;
+		}
+
+		@Override
 		public int charsWidth(char[] data, int off, int len) {
 			return (int) (len * fixedCharacterWidth);
+		}
+	}
+
+	private class MyRSyntaxTextArea extends RSyntaxTextArea {
+		private final int tabSize;
+		private final MyFontMetrics fontMetrics;
+
+		public MyRSyntaxTextArea(int tabSize, float charWidth, String[] textLines) {
+			this.tabSize = tabSize;
+			this.fontMetrics = new MyFontMetrics(charWidth);
+			setText(String.join("\n", textLines));
+		}
+
+		@Override
+		public int getTabSize() {
+			return tabSize;
+		}
+
+		@Override
+		public FontMetrics getFontMetricsForTokenType(int type) {
+			return fontMetrics;
 		}
 	}
 }
