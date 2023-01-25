@@ -211,7 +211,7 @@ class TokenImplTest {
 		assertIsTabConversionFriendly(false, "は\t", false);
 		assertIsTabConversionFriendly(false, "\tは", false);
 
-		// not possible if we mix tabs with wide characters and proportional fonts
+		// not possible if we have tabs in proportional fonts
 		assertIsTabConversionFriendly(false, "a\tb", true);
 	}
 

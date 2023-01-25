@@ -463,6 +463,7 @@ public class TokenImpl implements Token {
 		TokenImpl token = this;
 		int last = getOffset();
 		int lineOffset = RSyntaxUtilities.findStartOfLine(textArea.getDocument(), last);
+		boolean tabConversionFriendly = true;
 
 
 		while (token != null && token.isPaintable()) {
@@ -470,7 +471,8 @@ public class TokenImpl implements Token {
 			FontMetrics fm = textArea.getFontMetricsForTokenType(token.getType());
 
 			// long started = System.currentTimeMillis();
-			if (isTabConversionFriendly(fm, token)) {
+			tabConversionFriendly &= isTabConversionFriendly(fm, token);
+			if (tabConversionFriendly) {
 
 				// fast calculation using expanded tabs
 				MyTabConverter cvt = new MyTabConverter(tabSize, token, textArea.getDocument(), lineOffset);
