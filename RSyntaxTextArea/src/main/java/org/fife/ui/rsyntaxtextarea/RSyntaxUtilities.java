@@ -1613,7 +1613,9 @@ return c.getLineStartOffset(line);
 		int firstCharacterWidth = 0;
 		boolean hasFirstCharacterWidth = false;
 		for (int codePoint = 0; codePoint < 128; codePoint++) {
-			if (Character.isValidCodePoint(codePoint) && (Character.isLetter(codePoint) || Character.isDigit(codePoint))) {
+			boolean valid = Character.isValidCodePoint(codePoint)
+					&& (Character.isLetter(codePoint) || Character.isDigit(codePoint));
+			if (valid) {
 				char character = (char) codePoint;
 				int characterWidth = fontMetrics.charWidth(character);
 				if (hasFirstCharacterWidth) {

@@ -469,7 +469,7 @@ public class TokenImpl implements Token {
 
 			FontMetrics fm = textArea.getFontMetricsForTokenType(token.getType());
 
-//			long started = System.currentTimeMillis();
+			// long started = System.currentTimeMillis();
 			if (isTabConversionFriendly(fm, token)) {
 
 				// fast calculation using expanded tabs
@@ -483,8 +483,8 @@ public class TokenImpl implements Token {
 					int cvtOffset = getListOffsetForToken(fm, cvtTokenLine, cvtTokenOffset, cvtTokenCount, stableX, x);
 					if (cvtOffset >= 0) {
 						int tabbedOffset = cvt.toTabbedOffset(cvtOffset);
-//						System.out.printf("DONE: cvtOffset=%,d => tabbedOffset=%,d [%,d ms]%nText after offset: '%s'%n",
-//							cvtOffset, tabbedOffset, System.currentTimeMillis() - started, truncate(escape(text, tabbedOffset, cvt.originalEndOffset)));
+						// System.out.printf("DONE: cvtOffset=%,d => tabbedOffset=%,d [%,d ms]%nText after offset: '%s'%n",
+						// cvtOffset, tabbedOffset, System.currentTimeMillis() - started, truncate(escape(text, tabbedOffset, cvt.originalEndOffset)));
 						return tabbedOffset;
 					}
 				}
@@ -526,7 +526,7 @@ public class TokenImpl implements Token {
 	}
 
 	static boolean isTabConversionFriendly(FontMetrics fm, TokenImpl token) {
-//		long started = System.currentTimeMillis();
+		// long started = System.currentTimeMillis();
 		if (!RSyntaxUtilities.isMonospaced(fm)) {
 			return false;
 		}
@@ -540,13 +540,12 @@ public class TokenImpl implements Token {
 				return false;
 			}
 		}
-//		System.out.println("isTabConversionFriendly: " + (System.currentTimeMillis() - started) + " ms");
+		// System.out.println("isTabConversionFriendly: " + (System.currentTimeMillis() - started) + " ms");
 		return true;
 	}
 
 
 	private static boolean isWide(char c) {
-		// printf("ch=%s | cp=%s | type=%s | unicodeBlock=%s | unicodeScript=%s %n", c, c, Character.getType(c), Character.UnicodeBlock.of(c), Character.UnicodeScript.of(c));
 		Character.UnicodeScript script = Character.UnicodeScript.of(c);
 		List<Character.UnicodeScript> accepted = Arrays.asList(COMMON, CYRILLIC, GREEK, LATIN);
 		return !accepted.contains(script);
@@ -1039,7 +1038,9 @@ public class TokenImpl implements Token {
 
 	private static String escape(char[] text, int begin, int count) {
 		int length = begin + count;
-		return length>text.length || length<begin ? "*" + begin +"->"+length+"["+text.length+"]*" : escape(new String(text, begin, count));
+		return length>text.length || length<begin
+			? "*" + begin +"->"+length+"["+text.length+"]*"
+			: escape(new String(text, begin, count));
 	}
 
 	private static String escape(String s) {
@@ -1072,7 +1073,7 @@ public class TokenImpl implements Token {
 		 * @param tabSize    the number of spaces each tab represents
 		 * @param token      the token to process
 		 * @param document   containing the text of the token
-		 * @param lineOffset
+		 * @param lineOffset the offset of the first character on the line
 		 */
 		public MyTabConverter(int tabSize, TokenImpl token, Document document, int lineOffset) {
 			this.document = document;
