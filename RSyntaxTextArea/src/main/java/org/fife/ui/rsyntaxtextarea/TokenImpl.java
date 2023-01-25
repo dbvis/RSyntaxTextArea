@@ -526,7 +526,7 @@ public class TokenImpl implements Token {
 	}
 
 	static boolean isTabConversionFriendly(FontMetrics fm, TokenImpl token) {
-		long started = System.currentTimeMillis();
+//		long started = System.currentTimeMillis();
 		if (!RSyntaxUtilities.isMonospaced(fm)) {
 			return false;
 		}
