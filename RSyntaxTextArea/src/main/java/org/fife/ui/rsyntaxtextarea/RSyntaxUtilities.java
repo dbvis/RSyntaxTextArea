@@ -1612,11 +1612,9 @@ return c.getLineStartOffset(line);
 		boolean isMonospaced = true;
 		int firstCharacterWidth = 0;
 		boolean hasFirstCharacterWidth = false;
-		for (int codePoint = 0; codePoint < 128; codePoint++) {
-			boolean valid = Character.isValidCodePoint(codePoint)
-					&& (Character.isLetter(codePoint) || Character.isDigit(codePoint));
-			if (valid) {
-				char character = (char) codePoint;
+		for (int cp = 0; cp < 128; cp++) {
+			if (Character.isValidCodePoint(cp) &&  (Character.isLetter(cp) || Character.isDigit(cp))) {
+				char character = (char) cp;
 				int characterWidth = fontMetrics.charWidth(character);
 				if (hasFirstCharacterWidth) {
 					if (characterWidth != firstCharacterWidth) {

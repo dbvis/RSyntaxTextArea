@@ -483,8 +483,9 @@ public class TokenImpl implements Token {
 					int cvtOffset = getListOffsetForToken(fm, cvtTokenLine, cvtTokenOffset, cvtTokenCount, stableX, x);
 					if (cvtOffset >= 0) {
 						int tabbedOffset = cvt.toTabbedOffset(cvtOffset);
-						// System.out.printf("DONE: cvtOffset=%,d => tabbedOffset=%,d [%,d ms]%nText after offset: '%s'%n",
-						// cvtOffset, tabbedOffset, System.currentTimeMillis() - started, truncate(escape(text, tabbedOffset, cvt.originalEndOffset)));
+						// System.out.printf("DONE: cvtOffset=%,d => tabbedOffset=%,d [%,d ms]%nText after: '%s'%n",
+						// cvtOffset, tabbedOffset, System.currentTimeMillis() - started,
+						// truncate(escape(text, tabbedOffset, cvt.originalEndOffset)));
 						return tabbedOffset;
 					}
 				}
@@ -1038,9 +1039,8 @@ public class TokenImpl implements Token {
 
 	private static String escape(char[] text, int begin, int count) {
 		int length = begin + count;
-		return length>text.length || length<begin
-			? "*" + begin +"->"+length+"["+text.length+"]*"
-			: escape(new String(text, begin, count));
+		boolean invalid = length>text.length || length<begin;
+		return invalid ? "*"+begin+"->"+length+"["+text.length+"]*" : escape(new String(text, begin, count));
 	}
 
 	private static String escape(String s) {
