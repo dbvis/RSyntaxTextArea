@@ -539,7 +539,7 @@ public class TokenImpl implements Token {
 
 		boolean tabFound = false;
 		boolean wide = false;
-		for (int i = token.textOffset; i < token.textCount; i++) {
+		for (int i = 0; i < token.textCount; i++) {
 			char c = token.charAt(i);
 			tabFound |= c=='\t';
 			wide |= isWide(c);
