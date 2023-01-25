@@ -202,20 +202,23 @@ class TokenImplTest {
 	@Test
 	void testIsTabConversionFriendly() {
 		// ok if we have regular text or no tabs
-		assertIsTabConversionFriendly(true, "az\t");
-		assertIsTabConversionFriendly(true, "åäöüé");
-		assertIsTabConversionFriendly(true, "はユケンルマ");
-		assertIsTabConversionFriendly(true, "aは");
+		assertIsTabConversionFriendly(true, "az\t", false);
+		assertIsTabConversionFriendly(true, "åäöüé", false);
+		assertIsTabConversionFriendly(true, "はユケンルマ", false);
+		assertIsTabConversionFriendly(true, "aは", false);
 
 		// not possible if we mix tabs with wide characters
-		assertIsTabConversionFriendly(false, "は\t");
-		assertIsTabConversionFriendly(false, "\tは");
+		assertIsTabConversionFriendly(false, "は\t", false);
+		assertIsTabConversionFriendly(false, "\tは", false);
+
+		// not possible if we mix tabs with wide characters and proportional fonts
+		assertIsTabConversionFriendly(false, "a\tb", true);
 	}
 
-	private static void assertIsTabConversionFriendly(boolean expected, String string) {
+	private static void assertIsTabConversionFriendly(boolean expected, String string, boolean proportionalFont) {
 		char[] line = string.toCharArray();
 		TokenImpl token = new TokenImpl(line, 0, string.length()-1, 0, TokenTypes.IDENTIFIER, 0);
-		MyFontMetrics fm = new MyFontMetrics(10);
+		MyFontMetrics fm = new MyFontMetrics(10, proportionalFont);
 
 		String msg = "'" + string.replace('\t', '>') + "'";
 		boolean actual = TokenImpl.isTabConversionFriendly(fm, token);
@@ -429,29 +432,40 @@ class TokenImplTest {
 	}
 
 	private static class MyFontMetrics extends FontMetrics {
-		private final float fixedCharacterWidth;
+		private final float averageCharacterWidth;
+		private final boolean proportionalFont;
 
 		protected MyFontMetrics(float fixedCharacterWidth) {
+			this(fixedCharacterWidth, false);
+		}
+
+		protected MyFontMetrics(float averageCharacterWidth, boolean proportionalFont) {
 			super(null);
-			this.fixedCharacterWidth = fixedCharacterWidth;
+			this.averageCharacterWidth = averageCharacterWidth;
+			this.proportionalFont = proportionalFont;
 		}
 
 		@Override
 		public int charWidth(char ch) {
-			return (int) fixedCharacterWidth;
+			return proportionalFont ? randomize(averageCharacterWidth) : (int) averageCharacterWidth;
 		}
 
 		@Override
 		public int charsWidth(char[] data, int off, int len) {
-			return (int) (len * fixedCharacterWidth);
+			float w = len * averageCharacterWidth;
+			return proportionalFont ? randomize(w) : (int) w;
+		}
+
+		private int randomize(float w) {
+			return (int) (w + 1/Math.random());
 		}
 	}
 
-	private class MyRSyntaxTextArea extends RSyntaxTextArea {
+	private static class MyRSyntaxTextArea extends RSyntaxTextArea {
 		private final int tabSize;
 		private final MyFontMetrics fontMetrics;
 
-		public MyRSyntaxTextArea(int tabSize, float charWidth, String[] textLines) {
+		private MyRSyntaxTextArea(int tabSize, float charWidth, String[] textLines) {
 			this.tabSize = tabSize;
 			this.fontMetrics = new MyFontMetrics(charWidth);
 			setText(String.join("\n", textLines));

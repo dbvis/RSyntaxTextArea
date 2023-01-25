@@ -484,8 +484,8 @@ public class TokenImpl implements Token {
 					if (cvtOffset >= 0) {
 						int tabbedOffset = cvt.toTabbedOffset(cvtOffset);
 						// System.out.printf("DONE: cvtOffset=%,d => tabbedOffset=%,d [%,d ms]%nText after: '%s'%n",
-						// cvtOffset, tabbedOffset, System.currentTimeMillis() - started,
-						// truncate(escape(text, tabbedOffset, cvt.originalEndOffset)));
+						// 	cvtOffset, tabbedOffset, System.currentTimeMillis() - started,
+						// 	truncate(escape(text, tabbedOffset, cvt.originalEndOffset)));
 						return tabbedOffset;
 					}
 				}
@@ -528,16 +528,15 @@ public class TokenImpl implements Token {
 
 	static boolean isTabConversionFriendly(FontMetrics fm, TokenImpl token) {
 		// long started = System.currentTimeMillis();
-		if (!RSyntaxUtilities.isMonospaced(fm)) {
-			return false;
-		}
+		boolean proportional = !RSyntaxUtilities.isMonospaced(fm);
+
 		boolean tabFound = false;
 		boolean wide = false;
 		for (int i = token.textOffset; i < token.textCount; i++) {
 			char c = token.charAt(i);
 			tabFound |= c=='\t';
 			wide |= isWide(c);
-			if (wide && tabFound) {
+			if (tabFound && (proportional || wide)) {
 				return false;
 			}
 		}
