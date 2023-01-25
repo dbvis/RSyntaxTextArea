@@ -11,10 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
-import javax.swing.text.Position;
-import javax.swing.text.View;
+import javax.swing.text.*;
 import java.awt.*;
 
 
@@ -347,4 +344,24 @@ class RSyntaxUtilitiesTest extends AbstractRSyntaxTextAreaTest {
 		Assertions.assertEquals("foobar\\.\\$tmp",
 			RSyntaxUtilities.wildcardToPattern("foobar.$tmp", false, false).pattern());
 	}
+
+	@Test
+	void testFindStartOfLine() throws BadLocationException {
+		assertFindStartOfLine("text", 0);
+		assertFindStartOfLine("a\ntext", 2);
+		assertFindStartOfLine("a\rtext", 2);
+		assertFindStartOfLine("a\ntext", 2);
+		assertFindStartOfLine("a\r\ntext", 3);
+		assertFindStartOfLine("a\nb\ntext", 4);
+	}
+
+	private void assertFindStartOfLine(String text, int expected) throws BadLocationException {
+		StringContent c = new StringContent();
+		c.insertString(0, text);
+		Document result = new PlainDocument(c);
+		Document doc = result;
+		int actual = RSyntaxUtilities.findStartOfLine(doc, text.length()-1);
+		Assertions.assertEquals(expected, actual, text.substring(actual));
+	}
+
 }

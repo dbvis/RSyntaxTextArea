@@ -1604,5 +1604,55 @@ return c.getLineStartOffset(line);
 
 	}
 
+	/**
+	 * Does the supplied metrics represent a monospaced font, ie a font where all characters are equally wide?
+	 *
+	 * @param fontMetrics the metrics to use for checking character widths
+	 * @return boolean
+	 */
+	public static boolean isMonospaced(FontMetrics fontMetrics) {
+		boolean isMonospaced = true;
+		int firstCharacterWidth = 0;
+		boolean hasFirstCharacterWidth = false;
+		for (int cp = 0; cp < 128; cp++) {
+			if (Character.isValidCodePoint(cp) &&  (Character.isLetter(cp) || Character.isDigit(cp))) {
+				char character = (char) cp;
+				int characterWidth = fontMetrics.charWidth(character);
+				if (hasFirstCharacterWidth) {
+					if (characterWidth != firstCharacterWidth) {
+						isMonospaced = false;
+						break;
+					}
+				}
+				else {
+					firstCharacterWidth = characterWidth;
+					hasFirstCharacterWidth = true;
+				}
+			}
+		}
+		return isMonospaced;
+	}
 
+	/**
+	 * Scan the supplied document backward from the specified offset until the start of the line is found,
+	 * and return the offset for the first character on the line.
+	 *
+	 * @param doc   the text to scan
+	 * @param offset where to start looking
+	 * @return the offset of the first character of the line
+	 */
+	static int findStartOfLine(Document doc, int offset) {
+		try {
+			for (int i = offset-1; i > 0; i--) {
+				char ch = doc.getText(i,1).charAt(0);
+				// accept "any" line separator rather than system line separator (we don't know how text was created)
+				if (ch == '\n' || ch == '\r') {
+					return i + 1;
+				}
+			}
+		} catch (BadLocationException e) {
+			throw new RuntimeException(e);
+		}
+		return 0;
+	}
 }
