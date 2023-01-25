@@ -75,6 +75,21 @@ public final class SwingUtils {
 	}
 
 	/**
+	 * A floating point adaption of {@link FontMetrics#stringWidth(String)}.
+	 *
+	 * @param fm         font metrics to use for the calculation
+	 * @param string     an array of characters
+	 * @param beginIndex the initial offset in the array of characters
+	 * @param length the number of characters to read from the array
+	 * @return the total width of the supplied characters
+	 */
+	public static float stringWidth(FontMetrics fm, String string, int beginIndex, int length) {
+		Rectangle2D bounds =
+			fm.getFont().getStringBounds(string, beginIndex, beginIndex+length, fm.getFontRenderContext());
+		return (float) bounds.getWidth();
+	}
+
+	/**
 	 * Convenience method since there is no single method to set the x coordinate.
 	 *
 	 * @param r the rectangle to modify

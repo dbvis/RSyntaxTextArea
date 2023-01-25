@@ -12,7 +12,11 @@ import org.mockito.Mockito;
 
 import javax.swing.text.*;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.Rectangle2D;
 import java.util.StringJoiner;
+
+import static java.awt.Font.PLAIN;
 
 
 /**
@@ -434,6 +438,7 @@ class TokenImplTest {
 	private static class MyFontMetrics extends FontMetrics {
 		private final float averageCharacterWidth;
 		private final boolean proportionalFont;
+		private final Font font;
 
 		protected MyFontMetrics(float fixedCharacterWidth) {
 			this(fixedCharacterWidth, false);
@@ -443,6 +448,12 @@ class TokenImplTest {
 			super(null);
 			this.averageCharacterWidth = averageCharacterWidth;
 			this.proportionalFont = proportionalFont;
+			this.font = new MyFont(averageCharacterWidth);
+		}
+
+		@Override
+		public Font getFont() {
+			return font;
 		}
 
 		@Override
@@ -458,6 +469,24 @@ class TokenImplTest {
 
 		private int randomize(float w) {
 			return (int) (w + 1/Math.random());
+		}
+
+		private static class MyFont extends Font {
+			private final float averageCharacterWidth;
+
+			public MyFont(float averageCharacterWidth) {
+				super("TestFont", Font.PLAIN, 12);
+				this.averageCharacterWidth = averageCharacterWidth;
+			}
+
+			@Override
+			public Rectangle2D getStringBounds(String str, int beginIndex, int limit, FontRenderContext frc) {
+				float x = 0;
+				float y = 0;
+				float w = (limit - beginIndex) * averageCharacterWidth;
+				float h = getSize2D();
+				return new Rectangle2D.Float(x, y, w, h);
+			}
 		}
 	}
 

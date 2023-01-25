@@ -15,7 +15,6 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.geom.Rectangle2D;
 import javax.swing.text.*;
-import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -486,7 +485,7 @@ public class TokenImpl implements Token {
 				int cvtTokenOffset = cvt.getTokenOffset();
 				int cvtTokenCount = cvt.getTokenCount();
 
-				nextX = nextX + fm.stringWidth(cvtTokenLine.substring(cvtTokenOffset, cvtTokenOffset + cvtTokenCount));
+				nextX = nextX + SwingUtils.stringWidth(fm, cvtTokenLine, cvtTokenOffset, cvtTokenCount);
 				if (x < nextX) {
 					int cvtOffset = getListOffsetForToken(fm, cvtTokenLine, cvtTokenOffset, cvtTokenCount, stableX, x);
 					if (cvtOffset >= 0) {
@@ -563,9 +562,8 @@ public class TokenImpl implements Token {
 		assert text.indexOf('\t')<0 :
 			"Text must not contain any tab characters: " + text;
 
-		String fragment = text.substring(first, first + length);
-		int width = fm.stringWidth(fragment);
-		int xLast = (int) x0 + width;
+		float width = SwingUtils.stringWidth(fm, text, first, length);
+		float xLast = x0 + width;
 
 		// found in token?
 		if (x<xLast) {
@@ -576,7 +574,7 @@ public class TokenImpl implements Token {
 			} else {
 				// search again - clicked before or after middle of text?
 				int halfLength = length / 2;
-				int halfWidth = fm.stringWidth(text.substring(first, first+halfLength));
+				float halfWidth = SwingUtils.stringWidth(fm, text, first, halfLength);
 				float xMid = x0 + halfWidth;
 				if (x < xMid) {
 					// search first half
