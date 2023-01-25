@@ -190,24 +190,36 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		addThemeItem("Visual Studio", "vs.xml", bg, menu);
 		mb.add(menu);
 
-		JCheckBox mono = new JCheckBox("Monospaced");
-		mono.setBackground(Color.WHITE);
-		mono.setSelected(false);
-		JComboBox<Font> fontCombo = new JComboBox<>();
-		fontCombo.addItemListener(e -> textArea.setFont((Font) e.getItem()));
-		fontCombo.setRenderer((list, font, index, isSelected, cellHasFocus) -> new JLabel(font.getFontName()));
-		fillFontCombo(fontCombo, mono.isSelected());
-		mono.addItemListener(evt->fillFontCombo(fontCombo, mono.isSelected()));
-		mb.add(mono);
-		mb.add(fontCombo);
-
 		menu = new JMenu("Help");
 		JMenuItem item = new JMenuItem(new AboutAction());
 		menu.add(item);
 		mb.add(menu);
 
-		return mb;
+		// fonts
+		JSpinner fontSize = new JSpinner();
+		fontSize.setModel(new SpinnerNumberModel(12, 2, 72, -1));
+		fontSize.addChangeListener(e -> textArea.setFont(deriveFont(textArea.getFont(), fontSize)));
+		fontSize.setMaximumSize(new Dimension(50, 100));
 
+		JCheckBox mono = new JCheckBox("Monospaced");
+		mono.setBackground(Color.WHITE);
+		mono.setSelected(false);
+		JComboBox<Font> fontCombo = new JComboBox<>();
+
+		fontCombo.addItemListener(e -> textArea.setFont(deriveFont((Font) e.getItem(), fontSize)));
+		fontCombo.setRenderer((list, font, index, isSelected, cellHasFocus) -> new JLabel(font.getFontName()));
+		fillFontCombo(fontCombo, mono.isSelected());
+		mono.addItemListener(evt->fillFontCombo(fontCombo, mono.isSelected()));
+
+		mb.add(mono);
+		mb.add(fontCombo);
+		mb.add(fontSize);
+
+		return mb;
+	}
+
+	private Font deriveFont(Font item, JSpinner fontSize) {
+		return item.deriveFont(1.0f*(int) fontSize.getValue());
 	}
 
 	private void fillFontCombo(JComboBox<Font> fontCombo, boolean onlyMonospaced) {
