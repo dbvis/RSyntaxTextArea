@@ -467,58 +467,55 @@ public class TokenImpl implements Token {
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
 		TokenImpl token = this;
 		int last = getOffset();
-		int lineOffset = RSyntaxUtilities.findStartOfLine(textArea.getDocument(), last);
-		boolean tabConversionFriendly = true;
-
 
 		while (token != null && token.isPaintable()) {
 
 			FontMetrics fm = textArea.getFontMetricsForTokenType(token.getType());
-
-			// long started = System.currentTimeMillis();
-			tabConversionFriendly &= isTabConversionFriendly(fm, token);
-			if (tabConversionFriendly) {
-
-				// fast calculation using expanded tabs
-				MyTabConverter cvt = new MyTabConverter(tabSize, token, textArea.getDocument(), lineOffset);
-				String cvtTokenLine = cvt.getConvertedLine();
-				int cvtTokenOffset = cvt.getTokenOffset();
-				int cvtTokenCount = cvt.getTokenCount();
-
-				nextX = nextX + SwingUtils.stringWidth(fm, cvtTokenLine, cvtTokenOffset, cvtTokenCount);
-				if (x < nextX) {
-					int cvtOffset = getListOffsetForToken(fm, cvtTokenLine, cvtTokenOffset, cvtTokenCount, stableX, x);
-					if (cvtOffset >= 0) {
-						int tabbedOffset = cvt.toTabbedOffset(cvtOffset);
-						// System.out.printf("DONE: cvtOffset=%,d => tabbedOffset=%,d [%,d ms]%nText after: '%s'%n",
-						// 	cvtOffset, tabbedOffset, System.currentTimeMillis() - started,
-						// 	truncate(escape(text, tabbedOffset, cvt.originalEndOffset)));
-						return tabbedOffset;
-					}
-				}
-			} else {
-				// character-by-character based calculation
 				char[] text = token.text;
 				int start = token.textOffset;
 				int end = start + token.textCount;
+			int charCount = 0;
 				float currX=nextX;
 
 				for (int i = start; i < end; i++) {
 					currX = nextX;
 					if (text[i] == '\t') {
+					// add width of characters before the tab and reset counter
+					int charsWidth = fm.charsWidth(text, i, charCount);
+					nextX = stableX + charsWidth;
+					charCount = 0;
+
+					// tabstop
 						nextX = e.nextTabStop(nextX, 0);
 						stableX = nextX; // Cache ending x-coord. of tab.
-						start = i + 1; // Do charsWidth() from next char.
-					}
-					else {
-					nextX = stableX + SwingUtils.charsWidth(fm, text, start, i - start + 1);
-					}
+
+					// done?
 					if (x >= currX && x < nextX) {
 						if ((x - currX) < (nextX - x)) {
 							return last + i - token.textOffset;
 						}
 						return last + i + 1 - token.textOffset;
 					}
+
+				} else {
+
+					// regular character - increment counter
+					charCount++;
+//					nextX = stableX + fm.charsWidth(text, start, i - start + 1); // this takes time in long strings
+				}
+			}
+
+			// process remaining text after last tab (if any)
+			if (charCount > 0) {
+				int begin = end - charCount;
+				int width = fm.charsWidth(text, begin, charCount);
+				float lastX = nextX + width;
+				// x inside text?
+				if (x<=lastX) {
+					return getListOffset(fm, text, begin, charCount, nextX, x);
+				} else {
+					nextX += width; // add width and continue to next token
+				}
 				}
 			}
 
@@ -590,6 +587,52 @@ public class TokenImpl implements Token {
 		}
 		return -1; // not found
 	}
+
+	/**
+	 * <b>Internal, exposed for testing.</b>
+	 * <p/>
+	 * Determines the offset into the supplied text block that covers pixel location <code>x</code> using a faster
+	 * algorithm that doesn't check the width of each character, presuming that the text block does not contain any tab
+	 * characters (<code>'\t'</code>).
+	 * <p/>
+	 * Designed as subroutine of {@link #getListOffset(RSyntaxTextArea, TabExpander, float, float)} to improve
+	 * performance on very long text strings (eg hex dumps of images).
+	 *
+	 * @param fm FontMetrics for the token font
+	 * @param  chars the array of text to process
+	 * @param off index of first character in the array
+	 * @param len number of characters to process
+	 * @param x0 The pixel x-location that is the beginning of the text segment
+	 * @param x The pixel-position for which you want to get the corresponding offset.
+	 * @return the offset in the text corresponding to pixel x
+	 */
+	int getListOffset(FontMetrics fm, char[]  chars, int off, int len, float x0, float x) {
+		assert !String.copyValueOf( chars, off, len).contains("\t") : "Text must not contain any tab characters: " + new String( chars, off, len);
+		assert x >= x0 && x <= x0+fm.charsWidth( chars, off, len) : String.format("x not inside text: x=%,3f, x0=%.3f, width=%.3f", x, x0, fm.charsWidth( chars, off, len));
+
+		// found exact position?
+		if (len<2) {
+			int offset = off;
+			return offset;
+		}
+
+		// search again - clicked before or after middle of text?
+		int halfLength = len / 2;
+		int halfWidth = fm.charsWidth( chars, off, halfLength);
+		float xMid = x0 + halfWidth;
+
+		// search first half?
+		if (x < xMid) {
+			return getListOffset(fm,  chars, off, halfLength, x0, x);
+		}
+
+		// search second half
+		int newFirst = off + halfLength;
+		int newLength = len - halfLength;
+		float newX0 = x0 + halfWidth;
+		return getListOffset(fm,  chars, newFirst, newLength, newX0, x);
+	}
+
 
 	@Override
 	public Token getNextToken() {
