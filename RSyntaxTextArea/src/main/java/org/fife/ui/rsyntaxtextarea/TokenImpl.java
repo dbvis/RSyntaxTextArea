@@ -480,7 +480,7 @@ public class TokenImpl implements Token {
 				currX = nextX;
 				if (text[i] == '\t') {
 					// add width of characters before the tab and reset counter
-					int charsWidth = fm.charsWidth(text, i, charCount);
+					float charsWidth = SwingUtils.charsWidth(fm, text, i, charCount);
 					nextX = stableX + charsWidth;
 					charCount = 0;
 
@@ -507,7 +507,7 @@ public class TokenImpl implements Token {
 			// process remaining text after last tab (if any)
 			if (charCount > 0) {
 				int begin = end - charCount;
-				int width = fm.charsWidth(text, begin, charCount);
+				float width = SwingUtils.charsWidth(fm, text, begin, charCount);
 				float lastX = nextX + width;
 				// x inside text?
 				if (x<=lastX) {
