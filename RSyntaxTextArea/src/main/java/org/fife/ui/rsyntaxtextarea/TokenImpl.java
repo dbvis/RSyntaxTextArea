@@ -462,7 +462,7 @@ public class TokenImpl implements Token {
 			return getOffset();
 		}
 
-		int tabSize = textArea.getTabSize();
+		float currX = x0; // x-coordinate of current char.
 		float nextX = x0; // x-coordinate of next char.
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
 		TokenImpl token = this;
@@ -471,23 +471,22 @@ public class TokenImpl implements Token {
 		while (token != null && token.isPaintable()) {
 
 			FontMetrics fm = textArea.getFontMetricsForTokenType(token.getType());
-				char[] text = token.text;
-				int start = token.textOffset;
-				int end = start + token.textCount;
+			char[] text = token.text;
+			int start = token.textOffset;
+			int end = start + token.textCount;
 			int charCount = 0;
-				float currX=nextX;
 
-				for (int i = start; i < end; i++) {
-					currX = nextX;
-					if (text[i] == '\t') {
+			for (int i = start; i < end; i++) {
+				currX = nextX;
+				if (text[i] == '\t') {
 					// add width of characters before the tab and reset counter
 					int charsWidth = fm.charsWidth(text, i, charCount);
 					nextX = stableX + charsWidth;
 					charCount = 0;
 
 					// tabstop
-						nextX = e.nextTabStop(nextX, 0);
-						stableX = nextX; // Cache ending x-coord. of tab.
+					nextX = e.nextTabStop(nextX, 0);
+					stableX = nextX; // Cache ending x-coord. of tab.
 
 					// done?
 					if (x >= currX && x < nextX) {
@@ -516,7 +515,6 @@ public class TokenImpl implements Token {
 				} else {
 					nextX += width; // add width and continue to next token
 				}
-				}
 			}
 
 			stableX = nextX; // Cache ending x-coordinate of token.
@@ -530,63 +528,6 @@ public class TokenImpl implements Token {
 
 	}
 
-	static boolean isTabConversionFriendly(FontMetrics fm, TokenImpl token) {
-		// long started = System.currentTimeMillis();
-		boolean proportional = !RSyntaxUtilities.isMonospaced(fm);
-
-		boolean tabFound = false;
-		boolean wide = false;
-		for (int i = 0; i < token.textCount; i++) {
-			char c = token.charAt(i);
-			tabFound |= c=='\t';
-			wide |= isWide(c);
-			if (tabFound && (proportional || wide)) {
-				return false;
-			}
-		}
-		// System.out.println("isTabConversionFriendly: " + (System.currentTimeMillis() - started) + " ms");
-		return true;
-	}
-
-
-	private static boolean isWide(char c) {
-		Character.UnicodeScript script = Character.UnicodeScript.of(c);
-		List<Character.UnicodeScript> accepted = Arrays.asList(COMMON, CYRILLIC, GREEK, LATIN);
-		return !accepted.contains(script);
-	}
-
-	int getListOffsetForToken(FontMetrics fm, String text, int first, int length, float x0, float x) {
-		assert text.indexOf('\t')<0 :
-			"Text must not contain any tab characters: " + text;
-
-		float width = SwingUtils.stringWidth(fm, text, first, length);
-		float xLast = x0 + width;
-
-		// found in token?
-		if (x<xLast) {
-			// found exact position?
-			if (length<2) {
-				int offset = first;
-				return offset;
-			} else {
-				// search again - clicked before or after middle of text?
-				int halfLength = length / 2;
-				float halfWidth = SwingUtils.stringWidth(fm, text, first, halfLength);
-				float xMid = x0 + halfWidth;
-				if (x < xMid) {
-					// search first half
-					return getListOffsetForToken(fm, text, first, halfLength, x0, x);
-				} else {
-					// search second half
-					int newFirst = first + halfLength;
-					int newLength = length - halfLength;
-					float newX0 = x0 + halfWidth;
-					return getListOffsetForToken(fm, text, newFirst, newLength, newX0, x);
-				}
-			}
-		}
-		return -1; // not found
-	}
 
 	/**
 	 * <b>Internal, exposed for testing.</b>
@@ -1085,159 +1026,5 @@ public class TokenImpl implements Token {
 		   "]";
 	}
 
-	private static String escape(char[] text, int begin, int count) {
-		int length = begin + count;
-		boolean invalid = length>text.length || length<begin;
-		return invalid ? "*"+begin+"->"+length+"["+text.length+"]*" : escape(new String(text, begin, count));
-	}
 
-	private static String escape(String s) {
-		return s.replace('\t', '>').replace('\n', '\\');
-	}
-
-	private static String truncate(String s) {
-		String escaped = escape(s);
-		return escaped.length()<128 ? escaped : String.format("%s ... [%,d]", escaped.substring(0, 128), s.length());
-	}
-
-	/**
-	 * Convert tabs to whitespaces for a line of text in order to improve performance when calculating
-	 * the width of a large token.
-	 */
-	protected static class MyTabConverter {
-		private final Document document;
-		private final int tabSize;
-		private final int lineOffset;
-		private final int originalOffset;
-		private final int originalEndOffset;
-
-		private final String convertedLine;
-		private int newCount;
-		private int newOffsetOnLine;
-
-		/**
-		 * Constructor.
-		 *
-		 * @param tabSize    the number of spaces each tab represents
-		 * @param token      the token to process
-		 * @param document   containing the text of the token
-		 * @param lineOffset the offset of the first character on the line
-		 */
-		public MyTabConverter(int tabSize, TokenImpl token, Document document, int lineOffset) {
-			this.document = document;
-			this.tabSize = tabSize;
-			this.originalOffset = token.getOffset(); // where the token resides in the document
-			this.originalEndOffset = token.getEndOffset(); // where the token ends in the document
-			this.lineOffset = lineOffset;
-			this.convertedLine = convert();
-		}
-
-		/**
-		 * Return the text of the token line with tabs converted to whitespace.
-		 * We need to consider the entire line since tab conversions in the token depend
-		 * on tabs on the same line before the token.
-		 *
-		 * @return array of characters with all tab characters (if any) expanded to whitespace
-		 */
-		private String convert() {
-			StringBuilder expanded = new StringBuilder();
-			int begin = lineOffset;
-			int end = originalEndOffset;
-
-			for (int i = begin; i < end; i++) {
-				// remember where the token starts in the converted array
-				if (i == originalOffset) {
-					newOffsetOnLine = expanded.length();
-				}
-				char c = getCharacter(i);
-				if (c == '\t') {
-					int filler = getTabFiller(expanded.length());
-					for (int fill = 0; fill < filler; fill++) {
-						expanded.append(' ');
-					}
-				} else {
-					expanded.append(c);
-				}
-			}
-
-			// remember the new length with potentially expanded tabs
-			newCount = expanded.length() - newOffsetOnLine;
-			return expanded.toString();
-		}
-
-		private char getCharacter(int i){
-			// TODO make better use of the inherent array by using a Segment instead of a string copy?
-			try {
-				return document.getText(i, 1).charAt(0);
-			} catch (BadLocationException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		/**
-		 * Map supplied offset from offset in the converted (tab free) text back to an offset in the original text with
-		 * respect to expanded tabs. Loop over original text from the start of the line and expand tabs, adding the
-		 * fillers to the converted index until we reach the desired offset. At that point, the index in the original
-		 * text represents the corresponding offset in the converted text.
-		 *
-		 * @param offsetInConvertedLine     the offset in the line where tabs are expanded to whitespace
-		 * @return an integer reflecting the offset in the original character array with tab characters
-		 */
-		public int toTabbedOffset(int offsetInConvertedLine) {
-			int originalIndex = lineOffset;
-			int convertedIndex=0;
-			while(convertedIndex < offsetInConvertedLine)  {
-				char c = getCharacter(originalIndex);
-				if (c == '\t') {
-					convertedIndex += getTabFiller(convertedIndex);
-				} else {
-					convertedIndex++;
-				}
-				if (convertedIndex<=offsetInConvertedLine) {
-					originalIndex++;
-				}
-			}
-
-			return originalIndex;
-		}
-
-		/**
-		 * Calculate the number of spaces required to fill the text to next tab stop.
-		 *
-		 * @param offsetOnLine the position on the line
-		 * @return zero to {@link #tabSize}
-		 */
-		private int getTabFiller(int offsetOnLine) {
-			int remainder = offsetOnLine % tabSize;
-			int filler = tabSize - remainder;
-			return filler;
-		}
-
-		/**
-		 * Return the text of the token line with tabs converted to whitespace.
-		 *
-		 * @return array of characters with all tab characters (if any) expanded to whitespace
-		 */
-		String getConvertedLine() {
-			return convertedLine;
-		}
-
-		/**
-		 * Get the offset of the token on the converted line (<b>not</b> in the oroginal text).
-		 *
-		 * @return non-negative offset
-		 */
-		public int getTokenOffset() {
-			return newOffsetOnLine;
-		}
-
-		/**
-		 * Get the size of the token on the converted line (including any expanded tabs).
-		 *
-		 * @return size of token
-		 */
-		public int getTokenCount() {
-			return newCount;
-		}
-	}
 }
