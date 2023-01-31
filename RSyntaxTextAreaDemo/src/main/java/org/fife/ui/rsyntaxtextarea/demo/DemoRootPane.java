@@ -4,7 +4,7 @@
  */
 package org.fife.ui.rsyntaxtextarea.demo;
 
-import java.awt.BorderLayout;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -43,8 +43,8 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 	DemoRootPane() {
 		textArea = createTextArea();
-		setText("JavaExample.txt");
-		textArea.setSyntaxEditingStyle(SYNTAX_STYLE_JAVA);
+		textArea.setSyntaxEditingStyle(SYNTAX_STYLE_NONE);
+		textArea.setTabSize(4);
 		scrollPane = new RTextScrollPane(textArea, true);
 		Gutter gutter = scrollPane.getGutter();
 		gutter.setBookmarkingEnabled(true);
@@ -55,6 +55,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		//errorStrip.setBackground(java.awt.Color.blue);
 		getContentPane().add(errorStrip, BorderLayout.LINE_END);
 		setJMenuBar(createMenuBar());
+		getContentPane().add(createFontControls(), BorderLayout.SOUTH);
 	}
 
 
@@ -122,10 +123,11 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		addSyntaxItem("Python",  "PythonExample.txt", SYNTAX_STYLE_PYTHON, bg, menu);
 		addSyntaxItem("Ruby", "RubyExample.txt", SYNTAX_STYLE_RUBY, bg, menu);
 		addSyntaxItem("SQL",  "SQLExample.txt", SYNTAX_STYLE_SQL, bg, menu);
+		addSyntaxItem("Text",  "TextExample.txt", SYNTAX_STYLE_NONE, bg, menu);
+		addSyntaxItem("Text Alignment",  "TextAlignmentExample.txt", SYNTAX_STYLE_NONE, bg, menu);
 		addSyntaxItem("TypeScript", "TypeScriptExample.txt", SYNTAX_STYLE_TYPESCRIPT, bg, menu);
 		addSyntaxItem("XML",  "XMLExample.txt", SYNTAX_STYLE_XML, bg, menu);
 		addSyntaxItem("YAML", "YamlExample.txt", SYNTAX_STYLE_YAML, bg, menu);
-		menu.getItem(2).setSelected(true);
 		mb.add(menu);
 
 		menu = new JMenu("View");
@@ -165,6 +167,8 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		menu.add(cbItem);
 		cbItem = new JCheckBoxMenuItem(new TabLinesAction());
 		menu.add(cbItem);
+		cbItem = new JCheckBoxMenuItem(new WhitespaceVisibleAction());
+		menu.add(cbItem);
 		mb.add(menu);
 
 		menu = new JMenu("LookAndFeel");
@@ -193,9 +197,54 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		mb.add(menu);
 
 		return mb;
-
 	}
 
+	private Component createFontControls() {
+		JPanel panel = new JPanel();
+
+		JSpinner tabSize = new JSpinner();
+		tabSize.setModel(new SpinnerNumberModel(4, 1, 72, -1));
+		tabSize.addChangeListener(e -> textArea.setTabSize((Integer) tabSize.getValue()));
+
+		JSpinner fontSize = new JSpinner();
+		fontSize.setModel(new SpinnerNumberModel(12, 2, 72, -1));
+		fontSize.addChangeListener(e -> textArea.setFont(deriveFont(textArea.getFont(), fontSize)));
+
+		JCheckBox mono = new JCheckBox("Monospaced");
+		mono.setSelected(false);
+
+		JComboBox<Font> fontCombo = new JComboBox<>();
+		fontCombo.addItemListener(e -> textArea.setFont(deriveFont((Font) e.getItem(), fontSize)));
+		fontCombo.setRenderer((list, font, index, isSelected, cellHasFocus) -> new JLabel(font.getFontName()));
+		fillFontCombo(fontCombo, mono.isSelected());
+		mono.addItemListener(evt->fillFontCombo(fontCombo, mono.isSelected()));
+
+		panel.add(new JLabel("Tab Size:"));
+		panel.add(tabSize);
+		panel.add(mono);
+		panel.add(fontCombo);
+		panel.add(fontSize);
+
+		return panel;
+	}
+
+	private Font deriveFont(Font item, JSpinner fontSize) {
+		return item.deriveFont(1.0f*(int) fontSize.getValue());
+	}
+
+	private void fillFontCombo(JComboBox<Font> fontCombo, boolean onlyMonospaced) {
+		Font appFont = new JLabel().getFont();
+		String[] fontFamilyNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+
+		fontCombo.removeAllItems();
+		for (String name : fontFamilyNames) {
+			Font font = new Font(name, Font.PLAIN, appFont.getSize());
+			if (!onlyMonospaced || isMonospaced(getFontMetrics(font))) {
+				fontCombo.addItem(font);
+			}
+		}
+		fontCombo.setSelectedItem(appFont);
+	}
 
 	/**
 	 * Creates the text area for this application.
@@ -546,6 +595,24 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 	}
 
 	/**
+	 * Toggles line number visibility.
+	 */
+	private class WhitespaceVisibleAction extends AbstractAction {
+
+		private boolean selected;
+
+		WhitespaceVisibleAction() {
+			putValue(NAME, "Whitespace");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			selected = !selected;
+			textArea.setWhitespaceVisible(selected);
+		}
+
+	}
+	/**
 	 * Toggles word wrap.
 	 */
 	private class WordWrapAction extends AbstractAction {
@@ -561,5 +628,33 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 	}
 
+	/**
+	 * Does the supplied metrics represent a monospaced font, ie a font where all characters are equally wide?
+	 *
+	 * @param fontMetrics the metrics to use for checking character widths
+	 * @return boolean
+	 */
+	public static boolean isMonospaced(FontMetrics fontMetrics) {
+		boolean isMonospaced = true;
+		int firstCharacterWidth = 0;
+		boolean hasFirstCharacterWidth = false;
+		for (int cp = 0; cp < 128; cp++) {
+			if (Character.isValidCodePoint(cp) &&  (Character.isLetter(cp) || Character.isDigit(cp))) {
+				char character = (char) cp;
+				int characterWidth = fontMetrics.charWidth(character);
+				if (hasFirstCharacterWidth) {
+					if (characterWidth != firstCharacterWidth) {
+						isMonospaced = false;
+						break;
+					}
+				}
+				else {
+					firstCharacterWidth = characterWidth;
+					hasFirstCharacterWidth = true;
+				}
+			}
+		}
+		return isMonospaced;
+	}
 
 }
