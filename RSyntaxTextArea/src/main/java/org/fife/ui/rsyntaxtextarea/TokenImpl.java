@@ -15,10 +15,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.geom.Rectangle2D;
 import javax.swing.text.*;
-import java.util.Arrays;
-import java.util.List;
-
-import static java.lang.Character.UnicodeScript.*;
+import java.util.logging.Logger;
 
 
 /**
@@ -35,6 +32,7 @@ import static java.lang.Character.UnicodeScript.*;
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
 public class TokenImpl implements Token {
+	private static final Logger LOG = Logger.getLogger(TokenImpl.class.getName());
 
 	/**
 	 * The text this token represents.  This is implemented as a segment so we
@@ -511,7 +509,12 @@ public class TokenImpl implements Token {
 				float lastX = nextX + width;
 				// x inside text?
 				if (x<=lastX) {
-					return getListOffset(fm, text, begin, charCount, nextX, x);
+					int xOffsetInText = getListOffset(fm, text, begin, charCount, nextX, x);
+					int xOffsetInToken = xOffsetInText - token.textOffset;
+					int tokenOffsetInDocument = token.getOffset();
+					int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
+					LOG.fine(()-> debugListOffset(textArea, text, xOffsetInText, xOffsetInToken, tokenOffsetInDocument, xOffsetInDocument));
+					return xOffsetInDocument;
 				} else {
 					nextX += width; // add width and continue to next token
 				}
@@ -526,6 +529,11 @@ public class TokenImpl implements Token {
 		// If we didn't find anything, return the end position of the text.
 		return last;
 
+	}
+
+	private static String debugListOffset(RSyntaxTextArea textArea, char[] text, int xOffsetInText, int xOffsetInToken, int tokenOffsetInDocument, int xOffsetInDocument) {
+		return String.format("Total text length: %,d | Token Offset=%,d | xOffsetInText=%,d (%s) | xOffsetInToken (in token)=%,d => xOffsetInDocument=%,d ('%s') %n",
+			textArea.getText().length(), tokenOffsetInDocument, xOffsetInText, new String(text, xOffsetInText, 1), xOffsetInToken, xOffsetInDocument, textArea.getText().substring(xOffsetInDocument, xOffsetInDocument + 1));
 	}
 
 
@@ -553,8 +561,8 @@ public class TokenImpl implements Token {
 
 		// found exact position?
 		if (len<2) {
-			int offset = off;
-			return offset;
+			LOG.fine(()->String.format("x=%.2f => offset=%,d (%s)%n",x, off, chars[off]));
+			return off;
 		}
 
 		// search again - clicked before or after middle of text?
