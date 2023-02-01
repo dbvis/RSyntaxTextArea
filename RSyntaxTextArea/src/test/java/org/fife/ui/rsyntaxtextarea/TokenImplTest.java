@@ -275,6 +275,12 @@ class TokenImplTest {
 			super(null);
 			this.averageCharacterWidth = averageCharacterWidth;
 			this.proportionalFont = proportionalFont;
+			this.font = new MyFont(10);
+		}
+
+		@Override
+		public Font getFont() {
+			return font;
 		}
 
 		@Override
@@ -290,6 +296,21 @@ class TokenImplTest {
 
 		private int randomize(float w) {
 			return (int) (w + 1/Math.random());
+		}
+
+		private class MyFont extends Font {
+			public MyFont(int size) {
+				super("TEST", PLAIN, size);
+			}
+
+			@Override
+			public Rectangle2D getStringBounds(char[] chars, int beginIndex, int limit, FontRenderContext frc) {
+				int x = 0;
+				int y = size;
+				int width = charsWidth(chars, beginIndex, limit-beginIndex);
+				int height = size;
+				return new Rectangle2D.Float(x, y, width, height);
+			}
 		}
 	}
 }

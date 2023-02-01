@@ -557,7 +557,7 @@ public class TokenImpl implements Token {
 	 */
 	int getListOffset(FontMetrics fm, char[]  chars, int off, int len, float x0, float x) {
 		assert !String.copyValueOf( chars, off, len).contains("\t") : "Text must not contain any tab characters: " + new String( chars, off, len);
-		assert x >= x0 && x <= x0+fm.charsWidth( chars, off, len) : String.format("x not inside text: x=%,3f, x0=%.3f, width=%.3f", x, x0, fm.charsWidth( chars, off, len));
+		assert x >= x0 && x <= x0+SwingUtils.charsWidth(fm, chars, off, len) : String.format("x not inside text: x=%,3f, x0=%.3f, width=%.3f", x, x0, SwingUtils.charsWidth(fm, chars, off, len));
 
 		// found exact position?
 		if (len<2) {
@@ -567,7 +567,7 @@ public class TokenImpl implements Token {
 
 		// search again - clicked before or after middle of text?
 		int halfLength = len / 2;
-		int halfWidth = fm.charsWidth( chars, off, halfLength);
+		float halfWidth = SwingUtils.charsWidth(fm, chars, off, halfLength);
 		float xMid = x0 + halfWidth;
 
 		// search first half?
