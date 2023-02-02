@@ -32,6 +32,7 @@ import java.util.logging.Logger;
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
 public class TokenImpl implements Token {
+	private static final Logger LOG = Logger.getLogger(TokenImpl.class.getName());
 
 	/**
 	 * The text this token represents.  This is implemented as a segment so we
@@ -464,6 +465,7 @@ public class TokenImpl implements Token {
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
 		TokenImpl token = this;
 		int last = getOffset();
+		long started = System.currentTimeMillis();
 
 		while (token != null && token.isPaintable()) {
 
@@ -487,17 +489,17 @@ public class TokenImpl implements Token {
 
 					// done?
 					if (x >= currX && x < nextX) {
-						if ((x - currX) < (nextX - x)) {
-							return last + i - token.textOffset;
-						}
-						return last + i + 1 - token.textOffset;
+						int result = x-currX < nextX-x ?  last+i-token.textOffset : last+i+1-token.textOffset;
+						LOG.fine(()->String.format("%,d ms: Found in tab: x=%.3f => offset=%,d",
+							System.currentTimeMillis()-started, x, result));
+						return result;
 					}
 
 				} else {
 
 					// regular character - increment counter
 					charCount++;
-//					nextX = stableX + fm.charsWidth(text, start, i - start + 1); // this takes time in long strings
+					// nextX = stableX + fm.charsWidth(text, start, i - start + 1); // this takes time in long strings
 				}
 			}
 
@@ -512,6 +514,8 @@ public class TokenImpl implements Token {
 					int xOffsetInToken = xOffsetInText - token.textOffset;
 					int tokenOffsetInDocument = token.getOffset();
 					int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
+					LOG.fine(()-> debugListOffset(
+						started,textArea,text, tokenOffsetInDocument, xOffsetInText,xOffsetInToken, xOffsetInDocument));
 					return xOffsetInDocument;
 				} else {
 					nextX += width; // add width and continue to next token
@@ -528,6 +532,20 @@ public class TokenImpl implements Token {
 		return last;
 
 	}
+
+	private static String debugListOffset(long started, RSyntaxTextArea textArea, char[] text, int tokenOffset,
+										  int offsetInText, int offsetInToken, int offsetInDocument) {
+		long elapsed = System.currentTimeMillis() - started;
+		int length = textArea.getText().length();
+		String character = new String(text, offsetInText, 1);
+		String substring = textArea.getText().substring(offsetInDocument, offsetInDocument + 1);
+		return String.format(
+			"%,d ms: Total text length: %,d | Token Offset=%,d | " +
+				"offsetInText=%,d (%s) | offsetInToken=%,d => offsetInDocument=%,d ('%s') %n",
+			elapsed, length, tokenOffset,
+				offsetInText, character, offsetInToken, offsetInDocument, substring);
+	}
+
 
 	/**
 	 * <b>Internal, exposed for testing.</b>
@@ -549,10 +567,12 @@ public class TokenImpl implements Token {
 	 * @return the offset in the text corresponding to pixel x
 	 */
 	int getListOffset(FontMetrics fm, char[]  chars, int off0, int off, int len, float x0, float x) {
-		assert !String.copyValueOf(chars, off, len).contains("\t") : "Text must not contain any tab characters: " + new String(chars, off, len);
+		assert !String.copyValueOf(chars, off, len).contains("\t") :
+			"Text must not contain any tab characters: " + new String(chars, off, len);
 
 		// found exact position?
 		if (len<2) {
+			LOG.finest(()-> String.format("Found: x=%,.3f => offset=%,d ('%s')", x, off, chars[off]));
 			return off;
 		}
 
@@ -562,16 +582,33 @@ public class TokenImpl implements Token {
 		int halfLen = len / 2; // split the current segment in two
 		int zeroToHalfLen = off + halfLen - off0; // length from start of text to half of current segment
 		float xMid = x0 + SwingUtils.charsWidth(fm, chars, off0, zeroToHalfLen);
+		LOG.finest(() -> debugListOffsetRecursiveEntry(chars, off, len, x0, x, halfLen, zeroToHalfLen, xMid));
 
 		// search first half?
 		if (x < xMid) {
+			LOG.finest(() -> debugListOffsetRecursiveCall(chars, "FIRST half", off, off + halfLen - 1, halfLen));
 			return getListOffset(fm, chars, off0, off, halfLen, x0, x);
 		}
 
 		// search second half
 		int nextOff = off + halfLen;
 		int nextLen = len - halfLen;
+		LOG.finest(() -> debugListOffsetRecursiveCall(chars, "SECOND half", nextOff, nextOff + nextLen - 1, nextLen));
 		return getListOffset(fm,  chars, off0, nextOff, nextLen, x0, x);
+	}
+
+	private static String debugListOffsetRecursiveCall(char[] chars, String info, int first, int last, int nextLen) {
+		return String.format("Recursive call: %s: %,d-%,d ('%s'-'%s') | nextOff=%,3d, nextLen=%,d%n", // intentional %n
+				info, first, last, chars[first], chars[last], first, nextLen);
+	}
+
+	private static String debugListOffsetRecursiveEntry(
+		char[] chars, int off, int len, float x0, float x, int halfLen, int zeroToHalfLen, float xMid) {
+		return String.format(
+			"Analyzing: x=%.3f | x0=%.3f | off=%,d | len=%,d | %,d-%,d ('%s'-'%s') | " +
+				"halfLen=%,d | zeroToHalfLen=%,d => xMid=%.3f",
+			x, x0, off, len, off, off + len - 1, chars[off], chars[off + len - 1],
+				halfLen, zeroToHalfLen, xMid);
 	}
 
 
@@ -789,6 +826,7 @@ public class TokenImpl implements Token {
 	public Rectangle2D listOffsetToView(RSyntaxTextArea textArea, TabExpander e,
 			int pos, float x0, Rectangle2D rect) {
 
+		LOG.finest(()->"pos=" + pos + ", x0=" + x0);
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
 		TokenImpl token = this;
 		FontMetrics fm;

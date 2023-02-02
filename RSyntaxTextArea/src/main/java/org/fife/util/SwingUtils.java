@@ -50,7 +50,7 @@ public final class SwingUtils {
 	 * @param beginIndex where to start
 	 * @param length the number of characters to check
 	 */
-	private static boolean needsTextLayout( char[] chars, int beginIndex, int length) {
+	private static boolean needsTextLayout(char[] chars, int beginIndex, int length) {
 		// this is just a guess based on visual observations when running fractionally scaled fonts on Windows
 		// it certainly breaks at 70k
 		int criticalLength = 1000;
@@ -108,6 +108,7 @@ public final class SwingUtils {
 	 * @param length the number of characters to read from the array
 	 * @return the total width of the supplied characters
 	 */
+	@SuppressWarnings("unused")
 	public static float stringWidth(FontMetrics fm, String string, int beginIndex, int length) {
 		Rectangle2D bounds =
 			fm.getFont().getStringBounds(string, beginIndex, beginIndex+length, fm.getFontRenderContext());
