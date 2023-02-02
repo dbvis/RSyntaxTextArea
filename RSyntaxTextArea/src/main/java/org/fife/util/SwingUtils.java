@@ -94,20 +94,6 @@ public final class SwingUtils {
 	public static float charsWidth(FontMetrics fm, char[] chars, int beginIndex, int length) {
 		FontRenderContext frc = fm.getFontRenderContext();
 		Font font = fm.getFont();
-
-		// "complex text"
-		if (needsTextLayout(chars, beginIndex, length)) {
-			String string = new String(chars, beginIndex, length);
-			TextLayout layout = new TextLayout(string, font, frc);
-			float x = 0;
-			float y = -layout.getAscent();
-			float width = layout.getAdvance();
-			float height = layout.getAscent() + layout.getDescent() + layout.getLeading();
-			Rectangle2D.Float rectangle = new Rectangle2D.Float(x, y, width, height);
-			return rectangle.width;
-		}
-
-		// "simple text"
 		int limit = beginIndex + length;
 		Rectangle2D bounds = font.getStringBounds(chars, beginIndex, limit, frc);
 		return (float) bounds.getWidth();

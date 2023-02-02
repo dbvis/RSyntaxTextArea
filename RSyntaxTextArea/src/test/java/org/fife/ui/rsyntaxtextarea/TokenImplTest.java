@@ -8,21 +8,10 @@ package org.fife.ui.rsyntaxtextarea;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import javax.swing.text.*;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
-import java.util.StringJoiner;
-
-import static java.awt.Font.PLAIN;
-
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
-import javax.swing.text.PlainDocument;
-import javax.swing.text.StringContent;
-import java.awt.*;
 
 
 /**
@@ -258,7 +247,7 @@ class TokenImplTest {
 		FontMetrics fm = new MyFontMetrics(10f);
 
 		TokenImpl token = new TokenImpl();
-		int actual = token.getListOffset(fm, text.toCharArray(), tokenStartOffset, tokenEndOffset, x0, x);
+		int actual = token.getListOffset(fm, text.toCharArray(), tokenStartOffset, tokenStartOffset, tokenEndOffset, x0, x);
 		String msg = String.format("Clicked=%s - Expected: \"%s\"[%s]='%s' | Actual: %s='%s'", x, text, expected, (expected < 0 ? null : text.substring(expected, expected + 1)), actual, (actual < 0 || actual >= text.length() ? null : text.substring(actual, actual + 1)));
 		Assertions.assertEquals(expected, actual, msg);
 	}

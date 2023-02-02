@@ -32,7 +32,6 @@ import java.util.logging.Logger;
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
 public class TokenImpl implements Token {
-	private static final Logger LOG = Logger.getLogger(TokenImpl.class.getName());
 
 	/**
 	 * The text this token represents.  This is implemented as a segment so we
@@ -509,11 +508,10 @@ public class TokenImpl implements Token {
 				float lastX = nextX + width;
 				// x inside text?
 				if (x<=lastX) {
-					int xOffsetInText = getListOffset(fm, text, begin, charCount, nextX, x);
+					int xOffsetInText = getListOffset(fm, text, begin, begin, charCount, nextX, x);
 					int xOffsetInToken = xOffsetInText - token.textOffset;
 					int tokenOffsetInDocument = token.getOffset();
 					int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
-					LOG.fine(()-> debugListOffset(textArea, text, xOffsetInText, xOffsetInToken, tokenOffsetInDocument, xOffsetInDocument));
 					return xOffsetInDocument;
 				} else {
 					nextX += width; // add width and continue to next token
@@ -531,12 +529,6 @@ public class TokenImpl implements Token {
 
 	}
 
-	private static String debugListOffset(RSyntaxTextArea textArea, char[] text, int xOffsetInText, int xOffsetInToken, int tokenOffsetInDocument, int xOffsetInDocument) {
-		return String.format("Total text length: %,d | Token Offset=%,d | xOffsetInText=%,d (%s) | xOffsetInToken (in token)=%,d => xOffsetInDocument=%,d ('%s') %n",
-			textArea.getText().length(), tokenOffsetInDocument, xOffsetInText, new String(text, xOffsetInText, 1), xOffsetInToken, xOffsetInDocument, textArea.getText().substring(xOffsetInDocument, xOffsetInDocument + 1));
-	}
-
-
 	/**
 	 * <b>Internal, exposed for testing.</b>
 	 * <p/>
@@ -547,39 +539,39 @@ public class TokenImpl implements Token {
 	 * Designed as subroutine of {@link #getListOffset(RSyntaxTextArea, TabExpander, float, float)} to improve
 	 * performance on very long text strings (eg hex dumps of images).
 	 *
-	 * @param fm FontMetrics for the token font
-	 * @param  chars the array of text to process
-	 * @param off index of first character in the array
-	 * @param len number of characters to process
-	 * @param x0 The pixel x-location that is the beginning of the text segment
-	 * @param x The pixel-position for which you want to get the corresponding offset.
+	 * @param fm    FontMetrics for the token font
+	 * @param chars the array of text to process
+	 * @param off0 index of first character of the text block in the array
+	 * @param off   index of first character in the array fragment to process in this run
+	 * @param len   number of characters to process
+	 * @param x0    The pixel x-location that is the beginning of the text segment
+	 * @param x     The pixel-position for which you want to get the corresponding offset.
 	 * @return the offset in the text corresponding to pixel x
 	 */
-	int getListOffset(FontMetrics fm, char[]  chars, int off, int len, float x0, float x) {
-		assert !String.copyValueOf( chars, off, len).contains("\t") : "Text must not contain any tab characters: " + new String( chars, off, len);
-		assert x >= x0 && x <= x0+SwingUtils.charsWidth(fm, chars, off, len) : String.format("x not inside text: x=%,3f, x0=%.3f, width=%.3f", x, x0, SwingUtils.charsWidth(fm, chars, off, len));
+	int getListOffset(FontMetrics fm, char[]  chars, int off0, int off, int len, float x0, float x) {
+		assert !String.copyValueOf(chars, off, len).contains("\t") : "Text must not contain any tab characters: " + new String(chars, off, len);
 
 		// found exact position?
 		if (len<2) {
-			LOG.fine(()->String.format("x=%.2f => offset=%,d (%s)%n",x, off, chars[off]));
 			return off;
 		}
 
 		// search again - clicked before or after middle of text?
-		int halfLength = len / 2;
-		float halfWidth = SwingUtils.charsWidth(fm, chars, off, halfLength);
-		float xMid = x0 + halfWidth;
+		// divide current segment in half and measure width from original start;
+		// adding width of segments cause rounding errors on long (+2k) text blocks in fractionally scaled context
+		int halfLen = len / 2; // split the current segment in two
+		int zeroToHalfLen = off + halfLen - off0; // length from start of text to half of current segment
+		float xMid = x0 + SwingUtils.charsWidth(fm, chars, off0, zeroToHalfLen);
 
 		// search first half?
 		if (x < xMid) {
-			return getListOffset(fm,  chars, off, halfLength, x0, x);
+			return getListOffset(fm, chars, off0, off, halfLen, x0, x);
 		}
 
 		// search second half
-		int newFirst = off + halfLength;
-		int newLength = len - halfLength;
-		float newX0 = x0 + halfWidth;
-		return getListOffset(fm,  chars, newFirst, newLength, newX0, x);
+		int nextOff = off + halfLen;
+		int nextLen = len - halfLen;
+		return getListOffset(fm,  chars, off0, nextOff, nextLen, x0, x);
 	}
 
 
