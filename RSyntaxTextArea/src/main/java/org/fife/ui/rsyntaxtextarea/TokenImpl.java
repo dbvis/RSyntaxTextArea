@@ -15,6 +15,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.geom.Rectangle2D;
 import javax.swing.text.*;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 
@@ -460,6 +461,93 @@ public class TokenImpl implements Token {
 			return getOffset();
 		}
 
+		FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
+		return SwingUtils.isMonospaced(fm) ? getListOffsetMonospace(textArea, fm, x0, x) : getListOffsetProportional(textArea, e, x0, x);
+	}
+
+	private int getListOffsetMonospace(RSyntaxTextArea textArea, FontMetrics fm, float x0, float x) {
+		int tabSize = textArea.getTabSize();
+		float currX = x0; // x-coordinate of current char.
+		float nextX = x0; // x-coordinate of next char.
+		float stableX = x0; // Cached ending x-coord. of last tab or token.
+		TokenImpl token = this;
+		int last = getOffset();
+		int offsetOnLine = 0;
+		long started = System.currentTimeMillis();
+		float spaceWidth = SwingUtils.charWidth(fm, ' ');
+
+		while (token != null && token.isPaintable()) {
+
+			char[] text = token.text;
+			int start = token.textOffset;
+			int end = start + token.textCount;
+			int charCount = 0;
+
+			for (int i = start; i < end; i++) {
+				currX = nextX;
+				if (text[i] == '\t') {
+					// add width of characters before the tab and reset counter
+					float charsWidth = SwingUtils.charsWidth(fm, text, i, charCount);
+					nextX = stableX + charsWidth;
+					charCount = 0;
+
+					// tabstop
+					int remainder = offsetOnLine % tabSize;
+					int filler = tabSize - remainder;
+					nextX += filler * spaceWidth;
+					offsetOnLine += filler;
+
+					// done?
+					if (x >= currX && x < nextX) {
+						int result = x-currX < nextX-x ?  last+i-token.textOffset : last+i+1-token.textOffset;
+						LOG.fine(()->String.format("%,d ms: Found in tab: x=%.3f => offset=%,d",
+							System.currentTimeMillis()-started, x, result));
+						return result;
+					}
+
+				} else {
+
+					// regular character - increment counter
+					charCount++;
+					offsetOnLine ++;
+				}
+			}
+
+			// process remaining text after last tab (if any)
+			if (charCount > 0) {
+				int begin = end - charCount;
+				float width = SwingUtils.charsWidth(fm, text, begin, charCount);
+				float lastX = nextX + width;
+
+				// x inside text?
+				if (x<=lastX) {
+					float relativeX = (x - currX) / width;
+					int xOffsetInText = Math.round(charCount * relativeX);
+					int xOffsetInToken = token.textCount - charCount + xOffsetInText;
+					int tokenOffsetInDocument = token.getOffset();
+					int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
+					LOG.fine(() -> debugListOffset(
+						started, textArea, text, tokenOffsetInDocument, xOffsetInText, xOffsetInToken, xOffsetInDocument));
+					return xOffsetInDocument;
+				} else {
+					nextX += width; // add width and continue to next token
+				}
+			}
+
+			// no match in token - continue to next
+			stableX = nextX; // Cache ending x-coordinate of token.
+			last += token.textCount;
+			token = (TokenImpl)token.getNextToken();
+
+		}
+
+		// If we didn't find anything, return the end position of the text.
+		return last;
+
+	}
+
+	private int getListOffsetProportional(RSyntaxTextArea textArea, TabExpander e,
+							 float x0, float x) {
 		float currX = x0; // x-coordinate of current char.
 		float nextX = x0; // x-coordinate of next char.
 		float stableX = x0; // Cached ending x-coord. of last tab or token.

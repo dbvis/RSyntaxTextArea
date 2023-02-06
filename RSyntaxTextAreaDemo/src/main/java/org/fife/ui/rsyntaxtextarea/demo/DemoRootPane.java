@@ -25,6 +25,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 import org.fife.ui.rtextarea.FoldIndicatorStyle;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
+import org.fife.util.SwingUtils;
 
 
 /**
@@ -239,7 +240,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		fontCombo.removeAllItems();
 		for (String name : fontFamilyNames) {
 			Font font = new Font(name, Font.PLAIN, appFont.getSize());
-			if (!onlyMonospaced || isMonospaced(getFontMetrics(font))) {
+			if (!onlyMonospaced || SwingUtils.isMonospaced(getFontMetrics(font))) {
 				fontCombo.addItem(font);
 			}
 		}
@@ -627,35 +628,6 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 			textArea.setLineWrap(!textArea.getLineWrap());
 		}
 
-	}
-
-	/**
-	 * Does the supplied metrics represent a monospaced font, ie a font where all characters are equally wide?
-	 *
-	 * @param fontMetrics the metrics to use for checking character widths
-	 * @return boolean
-	 */
-	public static boolean isMonospaced(FontMetrics fontMetrics) {
-		boolean isMonospaced = true;
-		int firstCharacterWidth = 0;
-		boolean hasFirstCharacterWidth = false;
-		for (int cp = 0; cp < 128; cp++) {
-			if (Character.isValidCodePoint(cp) &&  (Character.isLetter(cp) || Character.isDigit(cp))) {
-				char character = (char) cp;
-				int characterWidth = fontMetrics.charWidth(character);
-				if (hasFirstCharacterWidth) {
-					if (characterWidth != firstCharacterWidth) {
-						isMonospaced = false;
-						break;
-					}
-				}
-				else {
-					firstCharacterWidth = characterWidth;
-					hasFirstCharacterWidth = true;
-				}
-			}
-		}
-		return isMonospaced;
 	}
 
 }
