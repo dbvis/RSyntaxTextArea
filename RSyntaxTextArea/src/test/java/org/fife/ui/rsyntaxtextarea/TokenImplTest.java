@@ -200,7 +200,7 @@ class TokenImplTest {
 	}
 
 	@Test
-    void testGetListOffset() {
+	void testGetListOffset() {
 		String text = "0123456789";
 		float xOffset = 0;
 
@@ -299,7 +299,7 @@ class TokenImplTest {
 	private static void assertGetListOffsetProportionalChunks(String text, int expected, float x0, float x) {
 		TabExpander te = new MyTabExpander(20);
 		RSyntaxTextArea rsta = new MyRSyntaxTextArea(text);
-		TokenImpl token = new TokenImpl(text.toCharArray(), 0, text.length()-1, 0, TokenTypes.IDENTIFIER, 0);
+		TokenImpl token = new TokenImpl(text.toCharArray(), 0, text.length() - 1, 0, TokenTypes.IDENTIFIER, 0);
 		token.listOffsetChunkSize = 5;
 
 		int actual = token.getListOffsetProportional(rsta, te, x0, x);
@@ -351,9 +351,72 @@ class TokenImplTest {
 		assertGetListOffsetMonospace(text, 10, xOffset, 95.9f);
 	}
 
+	@Test
+	void testGetListOffsetMonospaceTabs() {
+		float xOffset = 0;
+
+		{
+			// only tabs
+			String text = "\t\t\t\t\t";
+
+			assertGetListOffsetMonospace(text, 0, xOffset, 0f);
+			assertGetListOffsetMonospace(text, 1, xOffset, 40f);
+			assertGetListOffsetMonospace(text, 2, xOffset, 80f);
+			assertGetListOffsetMonospace(text, 3, xOffset, 120f);
+			assertGetListOffsetMonospace(text, 4, xOffset, 160f);
+
+		}
+		{
+			// regular chars
+			String text = "\tA\tB";
+
+			assertGetListOffsetMonospace(text, 0, xOffset, 0f);
+			assertGetListOffsetMonospace(text, 1, xOffset, 40f);
+			assertGetListOffsetMonospace(text, 2, xOffset, 50f);
+			assertGetListOffsetMonospace(text, 3, xOffset, 80f);
+		}
+		{
+			// variable tab expansion
+			String text = "\tA\tAB\tABC\tABCD\tABCDE";
+
+			assertGetListOffsetMonospace(text, 0, xOffset, 0f);
+			assertGetListOffsetMonospace(text, 1, xOffset, 40f); // A
+			assertGetListOffsetMonospace(text, 2, xOffset, 50f);
+			assertGetListOffsetMonospace(text, 3, xOffset, 80f); // AB
+			assertGetListOffsetMonospace(text, 4, xOffset, 90f);
+			assertGetListOffsetMonospace(text, 5, xOffset, 100f);
+			assertGetListOffsetMonospace(text, 6, xOffset, 120f); // ABC
+			assertGetListOffsetMonospace(text, 7, xOffset, 130f);
+			assertGetListOffsetMonospace(text, 8, xOffset, 140f);
+			assertGetListOffsetMonospace(text, 9, xOffset, 150f);
+			assertGetListOffsetMonospace(text, 10, xOffset, 160f); // ABCD
+			assertGetListOffsetMonospace(text, 11, xOffset, 170f); // B
+			assertGetListOffsetMonospace(text, 12, xOffset, 180f); // C
+			assertGetListOffsetMonospace(text, 13, xOffset, 190f); // D
+			assertGetListOffsetMonospace(text, 14, xOffset, 200f); // \t
+			assertGetListOffsetMonospace(text, 15, xOffset, 240f); // ABCDE
+		}
+		{
+			// wide chars
+			String text = "\tは\tユ";
+
+			assertGetListOffsetMonospace(text, 0, xOffset, 0f);
+			assertGetListOffsetMonospace(text, 1, xOffset, 40f);
+			assertGetListOffsetMonospace(text, 2, xOffset, 55f);
+			assertGetListOffsetMonospace(text, 3, xOffset, 80);
+		}
+
+	}
+
+//	@Test
+//	void workInProgress() {
+//		// placeholder for isolated tests
+//	}
+
 	private void assertGetListOffsetMonospace(String text, int expected, float x0, float x) {
 		RSyntaxTextArea rsta = new MyRSyntaxTextArea(text);
-		TokenImpl token = new TokenImpl(text.toCharArray(), 0, text.length()-1, 0, TokenTypes.IDENTIFIER, 0);
+		rsta.setTabSize(4);
+		TokenImpl token = new TokenImpl(text.toCharArray(), 0, text.length() - 1, 0, TokenTypes.IDENTIFIER, 0);
 
 		FontMetrics fm = new MyFontMetrics(10f);
 		int actual = token.getListOffsetMonospace(rsta, fm, x0, x);
@@ -363,17 +426,21 @@ class TokenImplTest {
 	private static void assertListOffsetEquals(String text, float x, int expectedOffset, int actualOffset) {
 		String expectedCharacter = expectedOffset < 0 || expectedOffset >= text.length()
 			? null
-			: text.substring(expectedOffset, expectedOffset + 1);
+			: escape(text.substring(expectedOffset, expectedOffset + 1));
 		String actualCharacter = actualOffset < 0 || actualOffset >= text.length()
 			? null
-			: text.substring(actualOffset, actualOffset + 1);
+			: escape(text.substring(actualOffset, actualOffset + 1));
 
-		String truncatedText = text.length()<40
+		String truncatedText = text.length() < 40
 			? text
-			: String.format("'%s...%s'[%,d]", text.substring(0,15), text.substring(text.length()-15), text.length());
+			: String.format("'%s...%s'[%,d]", text.substring(0, 15), text.substring(text.length() - 15), text.length());
 		String msg = String.format("x=%.3f - Expected: %,d ('%s') | Actual: %,d ('%s') | Text: '%s'",
-			x, expectedOffset, expectedCharacter, actualOffset, actualCharacter, truncatedText);
+			x, expectedOffset, expectedCharacter, actualOffset, actualCharacter, escape(truncatedText));
 		Assertions.assertEquals(expectedOffset, actualOffset, msg);
+	}
+
+	private static String escape(String s) {
+		return s.replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r");
 	}
 
 
@@ -399,14 +466,15 @@ class TokenImplTest {
 
 		@Override
 		public int charWidth(char ch) {
-			return proportionalFont ? randomize(averageCharacterWidth) : (int) averageCharacterWidth;
+			float w = proportionalFont ? randomize(averageCharacterWidth) : averageCharacterWidth;
+			return (int) (ch>256 ? w*1.5 : w);
 		}
 
 		@Override
 		public int charsWidth(char[] data, int off, int len) {
 			float w = len * averageCharacterWidth;
 			return proportionalFont ? randomize(w) : (int) w;
-	}
+		}
 
 		private int randomize(float w) {
 			return (int) (w + 1/Math.random());
