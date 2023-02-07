@@ -469,7 +469,7 @@ public class TokenImpl implements Token {
 			: getListOffsetProportional(textArea, e, x0, x);
 	}
 
-	private int getListOffsetMonospace(RSyntaxTextArea textArea, FontMetrics fm, float x0, float x) {
+	int getListOffsetMonospace(RSyntaxTextArea textArea, FontMetrics fm, float x0, float x) {
 		int tabSize = textArea.getTabSize();
 		float currX = x0; // x-coordinate of current char.
 		float nextX = x0; // x-coordinate of next char.

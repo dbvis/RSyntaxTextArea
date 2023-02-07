@@ -294,8 +294,6 @@ class TokenImplTest {
 		assertGetListOffsetProportionalChunks(text, 0, xOffset, 5.9f);
 		assertGetListOffsetProportionalChunks(text, 9, xOffset, 95f);
 		assertGetListOffsetProportionalChunks(text, 9, xOffset, 95.9f);
-
-
 	}
 
 	private static void assertGetListOffsetProportionalChunks(String text, int expected, float x0, float x) {
@@ -308,8 +306,62 @@ class TokenImplTest {
 		assertListOffsetEquals(text, x, expected, actual);
 	}
 
+	@Test
+	void testGetListOffsetMonospace() {
+		String text = "0123456789";
+		float xOffset = 0;
+
+		// ideal click before character (token is first one the line)
+		assertGetListOffsetMonospace(text, 0, xOffset, 0f);
+		assertGetListOffsetMonospace(text, 5, xOffset, 50f);
+		assertGetListOffsetMonospace(text, 6, xOffset, 60f);
+
+
+		// ideal click before character (token is first one the line)
+		assertGetListOffsetMonospace(text, 0, xOffset, 0f);
+		assertGetListOffsetMonospace(text, 1, xOffset, 10f);
+		assertGetListOffsetMonospace(text, 2, xOffset, 20f);
+		assertGetListOffsetMonospace(text, 3, xOffset, 30f);
+		assertGetListOffsetMonospace(text, 4, xOffset, 40f);
+		assertGetListOffsetMonospace(text, 5, xOffset, 50f);
+		assertGetListOffsetMonospace(text, 6, xOffset, 60f);
+		assertGetListOffsetMonospace(text, 7, xOffset, 70f);
+		assertGetListOffsetMonospace(text, 8, xOffset, 80f);
+		assertGetListOffsetMonospace(text, 9, xOffset, 90f);
+
+		// with offset (token is not first on the line)
+		xOffset = 100;
+		assertGetListOffsetMonospace(text, 0, xOffset, 100f);
+		assertGetListOffsetMonospace(text, 1, xOffset, 110f);
+		assertGetListOffsetMonospace(text, 2, xOffset, 120f);
+		assertGetListOffsetMonospace(text, 3, xOffset, 130f);
+		assertGetListOffsetMonospace(text, 4, xOffset, 140f);
+		assertGetListOffsetMonospace(text, 5, xOffset, 150f);
+		assertGetListOffsetMonospace(text, 6, xOffset, 160f);
+		assertGetListOffsetMonospace(text, 7, xOffset, 170f);
+		assertGetListOffsetMonospace(text, 8, xOffset, 180f);
+		assertGetListOffsetMonospace(text, 9, xOffset, 190f);
+
+		// click on character ("round")
+		xOffset = 0;
+		assertGetListOffsetMonospace(text, 0, xOffset, 4.9f);
+		assertGetListOffsetMonospace(text, 1, xOffset, 5f);
+		assertGetListOffsetMonospace(text, 1, xOffset, 5.9f);
+		assertGetListOffsetMonospace(text, 10, xOffset, 95f);
+		assertGetListOffsetMonospace(text, 10, xOffset, 95.9f);
+	}
+
+	private void assertGetListOffsetMonospace(String text, int expected, float x0, float x) {
+		RSyntaxTextArea rsta = new MyRSyntaxTextArea(text);
+		TokenImpl token = new TokenImpl(text.toCharArray(), 0, text.length()-1, 0, TokenTypes.IDENTIFIER, 0);
+
+		FontMetrics fm = new MyFontMetrics(10f);
+		int actual = token.getListOffsetMonospace(rsta, fm, x0, x);
+		assertListOffsetEquals(text, x, expected, actual);
+	}
+
 	private static void assertListOffsetEquals(String text, float x, int expectedOffset, int actualOffset) {
-		String expectedCharacter = expectedOffset < 0
+		String expectedCharacter = expectedOffset < 0 || expectedOffset >= text.length()
 			? null
 			: text.substring(expectedOffset, expectedOffset + 1);
 		String actualCharacter = actualOffset < 0 || actualOffset >= text.length()
