@@ -9,6 +9,7 @@ package org.fife.ui.rsyntaxtextarea;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import javax.swing.text.TabExpander;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
@@ -248,9 +249,81 @@ class TokenImplTest {
 
 		TokenImpl token = new TokenImpl();
 		int actual = token.getListOffset(fm, text.toCharArray(), tokenStartOffset, tokenStartOffset, tokenEndOffset, x0, x);
-		String msg = String.format("Clicked=%s - Expected: \"%s\"[%s]='%s' | Actual: %s='%s'", x, text, expected, (expected < 0 ? null : text.substring(expected, expected + 1)), actual, (actual < 0 || actual >= text.length() ? null : text.substring(actual, actual + 1)));
-		Assertions.assertEquals(expected, actual, msg);
+		assertListOffsetEquals(text, x, expected, actual);
 	}
+
+	@Test
+	void testGetListOffsetProportionalChunks() {
+		String text = "0123456789";
+		float xOffset = 0;
+
+		// ideal click before character (token is first one the line)
+		assertGetListOffsetProportionalChunks(text, 0, xOffset, 0f);
+		assertGetListOffsetProportionalChunks(text, 5, xOffset, 50f);
+		assertGetListOffsetProportionalChunks(text, 6, xOffset, 60f);
+
+
+		// ideal click before character (token is first one the line)
+		assertGetListOffsetProportionalChunks(text, 0, xOffset, 0f);
+		assertGetListOffsetProportionalChunks(text, 1, xOffset, 10f);
+		assertGetListOffsetProportionalChunks(text, 2, xOffset, 20f);
+		assertGetListOffsetProportionalChunks(text, 3, xOffset, 30f);
+		assertGetListOffsetProportionalChunks(text, 4, xOffset, 40f);
+		assertGetListOffsetProportionalChunks(text, 5, xOffset, 50f);
+		assertGetListOffsetProportionalChunks(text, 6, xOffset, 60f);
+		assertGetListOffsetProportionalChunks(text, 7, xOffset, 70f);
+		assertGetListOffsetProportionalChunks(text, 8, xOffset, 80f);
+		assertGetListOffsetProportionalChunks(text, 9, xOffset, 90f);
+
+		// with offset (token is not first on the line)
+		xOffset = 100;
+		assertGetListOffsetProportionalChunks(text, 0, xOffset, 100f);
+		assertGetListOffsetProportionalChunks(text, 1, xOffset, 110f);
+		assertGetListOffsetProportionalChunks(text, 2, xOffset, 120f);
+		assertGetListOffsetProportionalChunks(text, 3, xOffset, 130f);
+		assertGetListOffsetProportionalChunks(text, 4, xOffset, 140f);
+		assertGetListOffsetProportionalChunks(text, 5, xOffset, 150f);
+		assertGetListOffsetProportionalChunks(text, 6, xOffset, 160f);
+		assertGetListOffsetProportionalChunks(text, 7, xOffset, 170f);
+		assertGetListOffsetProportionalChunks(text, 8, xOffset, 180f);
+		assertGetListOffsetProportionalChunks(text, 9, xOffset, 190f);
+
+		// click on character ("truncate")
+		xOffset = 0;
+		assertGetListOffsetProportionalChunks(text, 0, xOffset, 5f);
+		assertGetListOffsetProportionalChunks(text, 0, xOffset, 5.9f);
+		assertGetListOffsetProportionalChunks(text, 9, xOffset, 95f);
+		assertGetListOffsetProportionalChunks(text, 9, xOffset, 95.9f);
+
+
+	}
+
+	private static void assertGetListOffsetProportionalChunks(String text, int expected, float x0, float x) {
+		TabExpander te = new MyTabExpander(20);
+		RSyntaxTextArea rsta = new MyRSyntaxTextArea(text);
+		TokenImpl token = new TokenImpl(text.toCharArray(), 0, text.length()-1, 0, TokenTypes.IDENTIFIER, 0);
+		token.listOffsetChunkSize = 5;
+
+		int actual = token.getListOffsetProportional(rsta, te, x0, x);
+		assertListOffsetEquals(text, x, expected, actual);
+	}
+
+	private static void assertListOffsetEquals(String text, float x, int expectedOffset, int actualOffset) {
+		String expectedCharacter = expectedOffset < 0
+			? null
+			: text.substring(expectedOffset, expectedOffset + 1);
+		String actualCharacter = actualOffset < 0 || actualOffset >= text.length()
+			? null
+			: text.substring(actualOffset, actualOffset + 1);
+
+		String truncatedText = text.length()<40
+			? text
+			: String.format("'%s...%s'[%,d]", text.substring(0,15), text.substring(text.length()-15), text.length());
+		String msg = String.format("x=%.3f - Expected: %,d ('%s') | Actual: %,d ('%s') | Text: '%s'",
+			x, expectedOffset, expectedCharacter, actualOffset, actualCharacter, truncatedText);
+		Assertions.assertEquals(expectedOffset, actualOffset, msg);
+	}
+
 
 	private static class MyFontMetrics extends FontMetrics {
 		private final float averageCharacterWidth;
@@ -300,6 +373,30 @@ class TokenImplTest {
 				int height = size;
 				return new Rectangle2D.Float(x, y, width, height);
 			}
+		}
+	}
+
+	private static class MyTabExpander implements TabExpander {
+		private final float relativeDistanceToNextTabStop;
+
+		public MyTabExpander(float fixedDistanceToNextTabStop) {
+			this.relativeDistanceToNextTabStop = fixedDistanceToNextTabStop;
+		}
+
+		@Override
+		public float nextTabStop(float x, int tabOffset) {
+			return x + relativeDistanceToNextTabStop;
+		}
+	}
+
+	private static class MyRSyntaxTextArea extends RSyntaxTextArea {
+		public MyRSyntaxTextArea(String text) {
+			super(text);
+		}
+
+		@Override
+		public FontMetrics getFontMetricsForTokenType(int type) {
+			return new MyFontMetrics(10);
 		}
 	}
 }

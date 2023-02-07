@@ -15,7 +15,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.geom.Rectangle2D;
 import javax.swing.text.*;
-import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 
@@ -68,6 +68,9 @@ public class TokenImpl implements Token {
 	 * The language this token is in, <code>&gt;= 0</code>.
 	 */
 	private int languageIndex;
+
+	/** Max size of text strings to process when converting x coordinate to model offset. */
+	int listOffsetChunkSize = -1; // 1000; // Disabled; yields offset errors unless token is first on line (?)
 
 
 	/**
@@ -460,9 +463,10 @@ public class TokenImpl implements Token {
 		if (x0 >= x) {
 			return getOffset();
 		}
-
 		FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
-		return SwingUtils.isMonospaced(fm) ? getListOffsetMonospace(textArea, fm, x0, x) : getListOffsetProportional(textArea, e, x0, x);
+		return SwingUtils.isMonospaced(fm)
+			? getListOffsetMonospace(textArea, fm, x0, x)
+			: getListOffsetProportional(textArea, e, x0, x);
 	}
 
 	private int getListOffsetMonospace(RSyntaxTextArea textArea, FontMetrics fm, float x0, float x) {
@@ -499,9 +503,9 @@ public class TokenImpl implements Token {
 
 					// done?
 					if (x >= currX && x < nextX) {
-						int result = x-currX < nextX-x ?  last+i-token.textOffset : last+i+1-token.textOffset;
-						LOG.fine(()->String.format("%,d ms: Found in tab: x=%.3f => offset=%,d",
-							System.currentTimeMillis()-started, x, result));
+						int result = x - currX < nextX - x ? last + i - token.textOffset : last + i + 1 - token.textOffset;
+						LOG.fine(() -> String.format("%,d ms: Found in tab: x=%.3f => offset=%,d",
+							System.currentTimeMillis() - started, x, result));
 						return result;
 					}
 
@@ -526,8 +530,9 @@ public class TokenImpl implements Token {
 					int xOffsetInToken = token.textCount - charCount + xOffsetInText;
 					int tokenOffsetInDocument = token.getOffset();
 					int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
-					LOG.fine(() -> debugListOffset(
-						started, textArea, text, tokenOffsetInDocument, xOffsetInText, xOffsetInToken, xOffsetInDocument));
+					int tokenTextCount = token.textCount;
+					LOG.fine(() -> debugListOffset("Monospaced tail",
+						started, textArea, text, tokenOffsetInDocument, xOffsetInText, xOffsetInToken, xOffsetInDocument, tokenTextCount));
 					return xOffsetInDocument;
 				} else {
 					nextX += width; // add width and continue to next token
@@ -542,12 +547,13 @@ public class TokenImpl implements Token {
 		}
 
 		// If we didn't find anything, return the end position of the text.
+		LOG.fine("Monospaced EOL");
 		return last;
 
 	}
 
-	private int getListOffsetProportional(RSyntaxTextArea textArea, TabExpander e,
-							 float x0, float x) {
+	int getListOffsetProportional(RSyntaxTextArea textArea, TabExpander e,
+										  float x0, float x) {
 		float currX = x0; // x-coordinate of current char.
 		float nextX = x0; // x-coordinate of next char.
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
@@ -567,7 +573,7 @@ public class TokenImpl implements Token {
 				currX = nextX;
 				if (text[i] == '\t') {
 					// add width of characters before the tab and reset counter
-					float charsWidth = SwingUtils.charsWidth(fm, text, i, charCount);
+					float charsWidth = SwingUtils.charsWidth(fm, text, i-charCount, charCount);
 					nextX = stableX + charsWidth;
 					charCount = 0;
 
@@ -583,15 +589,35 @@ public class TokenImpl implements Token {
 						return result;
 					}
 
+				} else if (listOffsetChunkSize>0 && charCount>0 && charCount % listOffsetChunkSize == 0) {
+					// check chunk (improves performance by reducing max length of string to measure width for)
+					int begin = i - charCount;
+					float charsWidth = SwingUtils.charsWidth(fm, text, begin, charCount);
+					nextX = stableX + charsWidth;
+
+					// x inside chunk?
+					if (x < nextX) {
+						int xOffsetInText = getListOffset(fm, text, begin, begin, charCount, stableX, x);
+						int xOffsetInToken = xOffsetInText - token.textOffset;
+						int tokenOffsetInDocument = token.getOffset();
+						int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
+						LOG.fine(() -> debugListOffset("Proportional Chunk",
+							started, textArea, text, tokenOffsetInDocument, xOffsetInText, xOffsetInToken, xOffsetInDocument, textCount));
+						return xOffsetInDocument;
+					}
+
+					// x beyond end of chunk
+					stableX = nextX;
+					charCount = 1;
+
 				} else {
 
 					// regular character - increment counter
 					charCount++;
-					// nextX = stableX + fm.charsWidth(text, start, i - start + 1); // this takes time in long strings
 				}
 			}
 
-			// process remaining text after last tab (if any)
+			// process remaining text after last tab or chunk (if any)
 			if (charCount > 0) {
 				int begin = end - charCount;
 				float width = SwingUtils.charsWidth(fm, text, begin, charCount);
@@ -602,8 +628,9 @@ public class TokenImpl implements Token {
 					int xOffsetInToken = xOffsetInText - token.textOffset;
 					int tokenOffsetInDocument = token.getOffset();
 					int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
-					LOG.fine(()-> debugListOffset(
-						started,textArea,text, tokenOffsetInDocument, xOffsetInText,xOffsetInToken, xOffsetInDocument));
+					int textCount = token.textCount;
+					LOG.fine(() -> debugListOffset("Proportional Tail",
+						started, textArea, text, tokenOffsetInDocument, xOffsetInText, xOffsetInToken, xOffsetInDocument, textCount));
 					return xOffsetInDocument;
 				} else {
 					nextX += width; // add width and continue to next token
@@ -621,16 +648,16 @@ public class TokenImpl implements Token {
 
 	}
 
-	private static String debugListOffset(long started, RSyntaxTextArea textArea, char[] text, int tokenOffset,
-										  int offsetInText, int offsetInToken, int offsetInDocument) {
+	private static String debugListOffset(String info, long started, RSyntaxTextArea textArea, char[] text, int tokenOffset,
+										  int offsetInText, int offsetInToken, int offsetInDocument, int tokenTextCount) {
 		long elapsed = System.currentTimeMillis() - started;
 		int length = textArea.getText().length();
 		String character = new String(text, offsetInText, 1);
 		String substring = textArea.getText().substring(offsetInDocument, offsetInDocument + 1);
 		return String.format(
-			"%,d ms: Total text length: %,d | Token Offset=%,d | " +
+			"%s: %,d ms: Total text length: %,d | Token Offset=%,d Count=%,d | " +
 				"offsetInText=%,d (%s) | offsetInToken=%,d => offsetInDocument=%,d ('%s') %n",
-			elapsed, length, tokenOffset,
+			info, elapsed, length, tokenOffset, tokenTextCount,
 				offsetInText, character, offsetInToken, offsetInDocument, substring);
 	}
 
