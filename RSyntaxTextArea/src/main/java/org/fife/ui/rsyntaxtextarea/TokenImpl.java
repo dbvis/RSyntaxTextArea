@@ -606,11 +606,11 @@ public class TokenImpl implements Token {
 
 					// add width of characters before the tab and reset counter
 					if (charCount>0) {
-						float charsWidth = SwingUtils.charsWidth(fm, text, i - charCount, charCount);
+						int begin = i - charCount;
+						float charsWidth = SwingUtils.charsWidth(fm, text, begin, charCount);
 						nextX = stableX + charsWidth;
 						// x inside chunk?
 						if (x < nextX) {
-							int begin = i - charCount;
 							int xOffsetInText = getListOffset(fm, text, begin, begin, charCount, stableX, x);
 							int xOffsetInToken = xOffsetInText - token.textOffset;
 							int tokenOffsetInDocument = token.getOffset();
@@ -639,10 +639,11 @@ public class TokenImpl implements Token {
 					}
 
 				} else if (listOffsetChunkSize>0 && charCount>0 && charCount % listOffsetChunkSize == 0) {
+					// TODO FIX! calculation yields false offset
 					// check chunk (improves performance by reducing max length of string to measure width for)
 					int begin = i - charCount;
 					float charsWidth = SwingUtils.charsWidth(fm, text, begin, charCount);
-					nextX = stableX + charsWidth;
+					nextX += charsWidth;
 
 					// x inside chunk?
 					if (x < nextX) {
@@ -650,14 +651,16 @@ public class TokenImpl implements Token {
 						int xOffsetInToken = xOffsetInText - token.textOffset;
 						int tokenOffsetInDocument = token.getOffset();
 						int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
+//							System.out.printf("i=%,d | charCount=%,d | begin=%,d | xOffsetInText=%,d | xOffsetInDocument=%,d | token.getOffset()=%,d | token.getEndOffset=%,d%n",
+//								i, charCount, begin, xOffsetInText, xOffsetInDocument, token.getOffset(), token.getEndOffset());
 						LOG.fine(() -> debugListOffset("Proportional Chunk",
 							started, textArea, text, x, tokenOffsetInDocument, xOffsetInText, xOffsetInToken, xOffsetInDocument, textCount));
 						return xOffsetInDocument;
 					}
 
 					// x beyond end of chunk
-					stableX = nextX;
-					charCount = 1;
+					charCount = 0;
+					stableX = nextX; // Cache ending x-coord. of chunk.
 
 				} else {
 
