@@ -473,8 +473,7 @@ public class TokenImpl implements Token {
 		// for calculating tab stops
 		int tabSize = textArea.getTabSize();
 		float spaceWidth = SwingUtils.charWidth(fm, ' ');
-		float wideCharWidth = 0; // TODO cache for each unicode script
-		int tabExpandedOffsetOnLine = 0;	// the "visual" offset in the tab-expanded text; use for calculating tab expansion
+		float tabWidth = spaceWidth * tabSize;
 
 		// loop params
 		float currX = x0; // x-coordinate of current char.
@@ -482,7 +481,6 @@ public class TokenImpl implements Token {
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
 		TokenImpl token = this;
 		int last = getOffset();
-		boolean wide = false; // track wide characters TODO track by unicode script instead
 
 		// loop over tokens
 		long started = System.currentTimeMillis();
@@ -497,15 +495,11 @@ public class TokenImpl implements Token {
 			for (int i = start; i < end; i++) {
 				currX = nextX;
 				char currChar = text[i];
-				boolean isWideCharacter = isWideCharacter(currChar); 	// TODO check if script changes rather than whether it is wide or not
-				if (isWideCharacter && wideCharWidth < 0.1) {
-					wideCharWidth = SwingUtils.charWidth(fm, currChar); // TODO store charWidth per script in an array keyed by unicode script ordinal
-				}
 
 				// TAB?
 				if (currChar == '\t') {
 					int begin = i - charCount;
-					float charsWidth = SwingUtils.charsWidth(fm, text, begin, charCount);
+					float charsWidth = charCount>0 ? SwingUtils.charsWidth(fm, text, begin, charCount) : 0;
 
 					// add width of characters before the tab and reset counter
 					if (charCount>0) {
@@ -520,9 +514,6 @@ public class TokenImpl implements Token {
 
 							int xOffsetInToken = i - charCount + xOffsetInText;
 							int tokenOffsetInDocument = token.getOffset();
-							if (xOffsetInDocument<token.getOffset() || xOffsetInDocument>token.getEndOffset()) {
-								throw new IllegalStateException();
-							}
 
 							int tokenTextCount = token.textCount;
 							LOG.fine(() -> debugListOffset("Before monospaced tab",
@@ -535,22 +526,10 @@ public class TokenImpl implements Token {
 					}
 
 					// tabstop
-					if (wide) {
-						wide = false;
-						float tabWidth = spaceWidth * tabSize;
-						float endX = currX + charsWidth;
-						int nofTabs = (int) ( endX / tabWidth);
-						int nextTab = nofTabs + 1;
-						float nextTabX = nextTab * tabWidth;
-						nextX = nextTabX;
-						tabExpandedOffsetOnLine += nextTab * tabSize;
-
-					} else {
-						int remainder = tabExpandedOffsetOnLine % tabSize;
-						int filler = tabSize - remainder;
-						nextX += filler * spaceWidth;
-						tabExpandedOffsetOnLine += filler;
-					}
+					int nofTabs = (int) ( currX / tabWidth);
+					int nextTab = nofTabs + 1;
+					float nextTabX = nextTab * tabWidth;
+					nextX = nextTabX;
 					stableX = nextX; // Cache ending x-coord. of tab.
 
 					// done?
@@ -563,46 +542,56 @@ public class TokenImpl implements Token {
 					}
 
 				}
-				else if (isWideCharacter != wide) {
-
-					// switch between wide and "normal"
-					wide = isWideCharacter;
-
-					// add width of characters before the switch and reset counter
-					if (charCount > 0) {
+				else if (isWideCharacter(currChar)) {
+					if (charCount>0) {
 						int begin = i - charCount;
-						float charsWidth = SwingUtils.charsWidth(fm, text, begin, charCount);
-						nextX = stableX + charsWidth;
+						float charsWidth = charCount>0 ? SwingUtils.charsWidth(fm, text, begin, charCount) : 0;
+
+						// add width of characters before the wide char and reset counter
+						nextX = currX + charsWidth;
 
 						// done?
 						if (x < nextX) {
 							float relativeX = (x - currX) / charsWidth;
 							int xOffsetInText = Math.round(charCount * relativeX);
 							int iOffset = last + i - token.textOffset;
-							int xOffsetInDocument = iOffset - charCount + xOffsetInText;
+							int xOffsetInDocument = iOffset-charCount + xOffsetInText;
 
 							int xOffsetInToken = i - charCount + xOffsetInText;
 							int tokenOffsetInDocument = token.getOffset();
 
 							int tokenTextCount = token.textCount;
-							LOG.fine(() -> debugListOffset("Before switch to/from wide character mode",
+							LOG.fine(() -> debugListOffset("Found in chunk before wide char",
 								started, textArea, text, x, tokenOffsetInDocument, xOffsetInText, xOffsetInToken, xOffsetInDocument, tokenTextCount));
 							return xOffsetInDocument;
 						}
-						// nope - add width and continue
+						// nope - add cumulated width and continue
 						currX = nextX;
 						charCount = 0;
+
+
+					}
+					// do regular calculation
+					float charWidth = SwingUtils.charWidth(fm, currChar);
+					nextX += charWidth;
+					charCount = 0;
+
+					// done?
+					if (x < nextX) {
+						int result = last + i - token.textOffset;
+						LOG.fine(() -> String.format("%,d ms: Found in wide character '%s':  => result=%,d",
+							System.currentTimeMillis() - started, currChar, result));
+						return result;
 					}
 				}
 				else {
 
-					// regular character - increment counters
+					// regular character - increment counter
 					charCount++;
-					tabExpandedOffsetOnLine++;
 				}
 			}
 
-			// process remaining text after last tab (if any)
+			// process remaining text after last breakpoint (if any)
 			if (charCount > 0) {
 				int begin = end - charCount;
 				float width = SwingUtils.charsWidth(fm, text, begin, charCount);
@@ -647,20 +636,21 @@ public class TokenImpl implements Token {
 	 * @return boolean
 	 */
 	private static boolean isWideCharacter(char c) {
-		return false;
-//		Character.UnicodeScript script = Character.UnicodeScript.of(c);
-//
-//		// TODO doesn't work - need solid approach to detect wide characters without calling FontMetrics
-//		switch (script) {
-//			case COMMON:
-//			case CYRILLIC:
-//			case GREEK:
-//			case LATIN:
-//				return false;
-//
-//			default:
-//				return true;
-//		}
+		Character.UnicodeScript script = Character.UnicodeScript.of(c);
+
+		// TODO improve - is there a robust approach to detect wide characters without calling FontMetrics?
+		switch (script) {
+			case CYRILLIC:
+			case GREEK:
+			case LATIN:
+				return false;
+			case COMMON:
+				return (int)c>255;
+
+			default:
+				LOG.finest(()->String.format("'%c' wide (%s), value=%,d%n", c, script, (int)c));
+				return true;
+		}
 	}
 
 	int getListOffsetProportional(RSyntaxTextArea textArea, TabExpander e,

@@ -400,7 +400,6 @@ class TokenImplTest {
 		}
 	}
 	@Test
-	@Disabled("Need a better solution to detect wide characters")
 	void testGetListOffsetMonospaceTabsWideChars() {
 		float xOffset = 0;
 		String text = "\tは\tユ\tはユ\tはユ";
@@ -413,28 +412,10 @@ class TokenImplTest {
 		assertGetListOffsetMonospace(text, 5, xOffset, 120f);
 		assertGetListOffsetMonospace(text, 6, xOffset, 135f);
 		assertGetListOffsetMonospace(text, 7, xOffset, 150f);
-		assertGetListOffsetMonospace(text, 8, xOffset, 200f);
-		assertGetListOffsetMonospace(text, 9, xOffset, 215f);
-		assertGetListOffsetMonospace(text, 10, xOffset, 230f);
+		assertGetListOffsetMonospace(text, 8, xOffset, 160f);
+		assertGetListOffsetMonospace(text, 9, xOffset, 175f);
+		assertGetListOffsetMonospace(text, 10, xOffset, 190f);
 	}
-
-//	@Test
-//	void workInProgress() {
-//		float xOffset = 0;
-//		String text = "\tは\tユ\tはユ\tはユ";
-//
-////		assertGetListOffsetMonospace(text, 0, xOffset, 0f);
-////		assertGetListOffsetMonospace(text, 1, xOffset, 40f);
-////		assertGetListOffsetMonospace(text, 2, xOffset, 55f);
-////		assertGetListOffsetMonospace(text, 3, xOffset, 80f);
-////		assertGetListOffsetMonospace(text, 4, xOffset, 95f);
-////		assertGetListOffsetMonospace(text, 5, xOffset, 120f);
-////		assertGetListOffsetMonospace(text, 6, xOffset, 135f);
-////		assertGetListOffsetMonospace(text, 7, xOffset, 150f);
-//		assertGetListOffsetMonospace(text, 8, xOffset, 200f);
-//		assertGetListOffsetMonospace(text, 9, xOffset, 215f);
-//		assertGetListOffsetMonospace(text, 10, xOffset, 230f);
-//	}
 
 	private void assertGetListOffsetMonospace(String text, int expected, float x0, float x) {
 		RSyntaxTextArea rsta = new MyRSyntaxTextArea(text);
