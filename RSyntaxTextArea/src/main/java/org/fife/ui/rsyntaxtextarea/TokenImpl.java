@@ -504,11 +504,11 @@ public class TokenImpl implements Token {
 						if (x < nextX) {
 							float relativeX = (x - currX) / charsWidth;
 							int xOffsetInText = Math.round(charCount * relativeX);
-
 							int tabOffset = last + i - token.textOffset;
+							int xOffsetInDocument = tabOffset-charCount + xOffsetInText;
+
 							int xOffsetInToken = i - charCount + xOffsetInText;
 							int tokenOffsetInDocument = token.getOffset();
-							int xOffsetInDocument = tabOffset-charCount + xOffsetInText;
 							if (xOffsetInDocument<token.getOffset() || xOffsetInDocument>token.getEndOffset()) {
 								throw new IllegalStateException();
 							}
@@ -527,6 +527,7 @@ public class TokenImpl implements Token {
 					int filler = tabSize - remainder;
 					nextX += filler * spaceWidth;
 					tabExpandedOffsetOnLine += filler;
+					stableX = nextX; // Cache ending x-coord. of tab.
 
 					// done?
 					if (x >= currX && x < nextX) {
@@ -536,7 +537,6 @@ public class TokenImpl implements Token {
 							System.currentTimeMillis() - started, x, result));
 						return result;
 					}
-					stableX = nextX; // Cache ending x-coord. of tab.
 
 				} else {
 
@@ -588,8 +588,9 @@ public class TokenImpl implements Token {
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
 		TokenImpl token = this;
 		int last = getOffset();
-		long started = System.currentTimeMillis();
 
+		// loop over tokens
+		long started = System.currentTimeMillis();
 		while (token != null && token.isPaintable()) {
 
 			FontMetrics fm = textArea.getFontMetricsForTokenType(token.getType());
@@ -598,13 +599,31 @@ public class TokenImpl implements Token {
 			int end = start + token.textCount;
 			int charCount = 0;
 
+			// loop over text in token
 			for (int i = start; i < end; i++) {
 				currX = nextX;
 				if (text[i] == '\t') {
+
 					// add width of characters before the tab and reset counter
-					float charsWidth = SwingUtils.charsWidth(fm, text, i-charCount, charCount);
-					nextX = stableX + charsWidth;
-					charCount = 0;
+					if (charCount>0) {
+						float charsWidth = SwingUtils.charsWidth(fm, text, i - charCount, charCount);
+						nextX = stableX + charsWidth;
+						// x inside chunk?
+						if (x < nextX) {
+							int begin = i - charCount;
+							int xOffsetInText = getListOffset(fm, text, begin, begin, charCount, stableX, x);
+							int xOffsetInToken = xOffsetInText - token.textOffset;
+							int tokenOffsetInDocument = token.getOffset();
+							int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
+							int textCount = token.textCount;
+							LOG.fine(() -> debugListOffset("Proportional Chunk Before Tab",
+								started, textArea, text, x, tokenOffsetInDocument, xOffsetInText, xOffsetInToken, xOffsetInDocument, textCount));
+							return xOffsetInDocument;
+
+						}
+						currX = nextX;
+						charCount = 0;
+					}
 
 					// tabstop
 					nextX = e.nextTabStop(nextX, 0);
@@ -612,7 +631,8 @@ public class TokenImpl implements Token {
 
 					// done?
 					if (x >= currX && x < nextX) {
-						int result = x-currX < nextX-x ?  last+i-token.textOffset : last+i+1-token.textOffset;
+						int tabOffset = last + i - token.textOffset;
+						int result = x-currX < nextX-x ? tabOffset : tabOffset+1;
 						LOG.fine(()->String.format("%,d ms: Found in tab: x=%.3f => offset=%,d",
 							System.currentTimeMillis()-started, x, result));
 						return result;
