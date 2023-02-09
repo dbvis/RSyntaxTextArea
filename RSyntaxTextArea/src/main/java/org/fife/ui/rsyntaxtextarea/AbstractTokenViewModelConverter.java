@@ -32,8 +32,8 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 * algorithm that doesn't check the width of each character, presuming that the text block does not contain any tab
 	 * characters (<code>'\t'</code>).
 	 * <p/>
-	 * Designed as helper for {@link #getTokenListOffset(RSyntaxTextArea, TabExpander, TokenImpl, float, float)}
-	 * to improve performance on very long text strings (eg hex dumps of images).
+	 * Designed for {@link TokenImpl#getListOffset(RSyntaxTextArea, TabExpander, float, float)} to improve performance
+	 * on very long text strings (eg hex dumps of images or single line JSON documents).
 	 *
 	 * @param fm    FontMetrics for the token font
 	 * @param chars the array of text to process

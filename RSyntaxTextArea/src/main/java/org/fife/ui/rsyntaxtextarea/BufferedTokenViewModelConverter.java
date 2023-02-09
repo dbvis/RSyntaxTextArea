@@ -54,7 +54,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 						nextX = stableX + charsWidth;
 						// x inside chunk?
 						if (x < nextX) {
-							return getListOffset(started, "Chunk before Tab", token, fm, text, begin, charCount, stableX, x);
+							return getListOffset(started, "Chunk before Tab", token, fm, begin, charCount, stableX, x);
 						}
 						currX = nextX;
 						charCount = 0;
@@ -85,7 +85,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
 					// x inside chunk?
 					if (x < nextX) {
-						return getListOffset(started, "Chunk", token, fm, text, begin, charCount, stableX, x);
+						return getListOffset(started, "Chunk", token, fm, begin, charCount, stableX, x);
 					}
 					charCount = 0;
 					stableX = nextX; // Cache ending x-coord. of chunk.
@@ -103,7 +103,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 				float lastX = nextX + width;
 				// x inside text?
 				if (x<=lastX) {
-					return getListOffset(started, "Tail", token, fm, text, begin, charCount, stableX, x);
+					return getListOffset(started, "Tail", token, fm, begin, charCount, stableX, x);
 				} else {
 					nextX += width; // add width and continue to next token
 				}
@@ -121,28 +121,29 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	}
 
 	/**
-	 * Find the offset in the specified text segment.
-	 * The x coordinate must already be verified to match the segment.
-	 * @param started for reporting elapsed time (debug)
-	 * @param info where did we exit? (debug)
-	 * @param token the token holding the text
-	 * @param fm metric for the font
-	 * @param text the token text  to search
-	 * @param begin where to start looking in the text
+	 * Find the offset in the specified text segment. The x coordinate must already be verified to match the segment.
+	 *
+	 * @param started   for reporting elapsed time (debug)
+	 * @param logMessage where did we exit? (debug)
+	 * @param token     the token holding the text
+	 * @param fm        metric for the font
+	 * @param begin     where to start looking in the text
 	 * @param charCount how many characters we should look for
-	 * @param x0 initial coordinate of the text
-	 * @param x the coordinate to map
+	 * @param x0        initial coordinate of the text
+	 * @param x         the coordinate to map
 	 * @return offset for the corresponding character in the documetn
 	 */
-	private int getListOffset(long started, String info, TokenImpl token, FontMetrics fm, char[] text, int begin, int charCount, float x0, float x) {
-		int xOffsetInText = getListOffset(fm, text, begin, begin, charCount, x0, x);
+	private int getListOffset(long started, String logMessage, TokenImpl token, FontMetrics fm, int begin, int charCount, float x0, float x) {
+		int xOffsetInText = getListOffset(fm, token.text, begin, begin, charCount, x0, x);
+
 		int xOffsetInToken = xOffsetInText - token.textOffset;
 		int tokenOffsetInDocument = token.getOffset();
-		int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
-		int tokenTextCount = token.textCount;
-		LOG.fine(() -> debugListOffset(info, started, textArea, text, x, tokenOffsetInDocument,
-			xOffsetInText, xOffsetInToken, xOffsetInDocument, tokenTextCount));
-		return xOffsetInDocument;
+		int result = tokenOffsetInDocument + xOffsetInToken;
+
+		LOG.fine(() -> debugListOffset(logMessage, started, textArea, token.text, x, tokenOffsetInDocument,
+			xOffsetInText, xOffsetInToken, result, token.textCount));
+		assert result>=0 && result<=token.getEndOffset() : "Invalid result. Is x inside text segment?";
+		return result;
 	}
 
 }

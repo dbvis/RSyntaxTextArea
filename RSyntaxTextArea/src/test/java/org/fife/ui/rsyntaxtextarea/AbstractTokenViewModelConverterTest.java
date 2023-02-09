@@ -9,7 +9,7 @@ import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
 import java.util.Arrays;
 
-public class TokenViewModelConverterTest {
+public class AbstractTokenViewModelConverterTest {
 
 	@Test
 	void testGetListOffset() {
