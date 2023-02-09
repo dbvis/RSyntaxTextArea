@@ -140,8 +140,8 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 		int tokenOffsetInDocument = token.getOffset();
 		int result = tokenOffsetInDocument + xOffsetInToken;
 
-		logConversion(logMessage, started, textArea, token.text, x, tokenOffsetInDocument,
-			xOffsetInChunk, xOffsetInToken, result, token.textCount);
+		logConversion(logMessage, started, textArea, token, x,
+			xOffsetInChunk, xOffsetInToken, result);
 		assert result>=0 && result<=token.getEndOffset() : "Invalid result. Is x inside text segment?";
 		return result;
 	}

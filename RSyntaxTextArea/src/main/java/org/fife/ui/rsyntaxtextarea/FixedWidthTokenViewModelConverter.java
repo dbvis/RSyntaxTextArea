@@ -65,7 +65,7 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 						// done?
 						if (x < nextX) {
-							return getOffsetFromChunk("Before tab", started, token, last, i, charCount, x, currX, charsWidth);
+							return getOffsetFromChunk("Before tab", started, token, i, charCount, currX, x, charsWidth);
 						}
 						// nope - add width and continue
 						currX = nextX;
@@ -98,7 +98,7 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 						// done?
 						if (x < nextX) {
-							return getOffsetFromChunk("In chunk before wide char", started, token, last, i, charCount, x, currX, charsWidth);
+							return getOffsetFromChunk("In chunk before wide char", started, token, i, charCount, currX, x, charsWidth);
 						}
 						// nope - add cumulated width and continue
 						currX = nextX;
@@ -133,16 +133,7 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 				// x inside text?
 				if (x<=lastX) {
-					float xInChunk = x - currX;
-					float relativeX = xInChunk / width;
-					int xOffsetInChunk = Math.round(charCount * relativeX);
-					int xOffsetInToken = token.textCount - charCount + xOffsetInChunk;
-					int tokenOffsetInDocument = token.textOffset;
-					int xOffsetInDocument = tokenOffsetInDocument + xOffsetInToken;
-					int tokenTextCount = token.textCount;
-					logConversion("Monospaced tail", started, textArea, text,
-						x, tokenOffsetInDocument, xOffsetInChunk, xOffsetInToken, xOffsetInDocument, tokenTextCount);
-					return xOffsetInDocument;
+					return getOffsetFromChunk("Tail", started, token, token.textCount, charCount, currX, x, width);
 				} else {
 					nextX += width; // add width and continue to next token
 				}
@@ -161,19 +152,19 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 	}
 
-	private int getOffsetFromChunk(String info, long started, TokenImpl token, int tokenOffset, int chunkEnd, int chunkSize, float x, float x0, float chunkWidth) {
-		float xOffset = x - x0;
-		float relativeX = xOffset / chunkWidth;
-		int offsetInChunk = Math.round(chunkSize * relativeX);
+	private int getOffsetFromChunk(String info, long started, TokenImpl token, int chunkEnd, int chunkSize, float x0, float x, float chunkWidth) {
+		float xInChunk = x - x0;
+		float relativeX = xInChunk / chunkWidth;
+		int xOffsetInChunk = Math.round(chunkSize * relativeX);
 
 		int chunkBeginInToken = chunkEnd - chunkSize;
 		int chunkOffsetInToken = chunkBeginInToken - token.textOffset;
-		int xOffsetInDocument = tokenOffset + chunkOffsetInToken + offsetInChunk;
+		int result = token.getOffset() + chunkOffsetInToken + xOffsetInChunk;
 
-		int offsetInToken = chunkEnd - chunkSize + offsetInChunk;
-		logConversion(info, started, textArea, token.text, x,token.getOffset(),
-			offsetInChunk, offsetInToken, xOffsetInDocument, token.textCount);
-		return xOffsetInDocument;
+		int offsetInToken = chunkEnd - chunkSize + xOffsetInChunk;
+		logConversion(info, started, textArea, token, x,
+			xOffsetInChunk, offsetInToken, result);
+		return result;
 	}
 
 }
