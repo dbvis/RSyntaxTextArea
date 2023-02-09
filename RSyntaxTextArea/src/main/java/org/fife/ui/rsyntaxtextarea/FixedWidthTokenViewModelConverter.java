@@ -98,7 +98,8 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 						// done?
 						if (x < nextX) {
-							return getOffsetFromChunk("In chunk before wide char", started, token, i, charCount, currX, x, charsWidth);
+							return getOffsetFromChunk("In chunk before wide char",
+								started, token, i, charCount, currX, x, charsWidth);
 						}
 						// nope - add cumulated width and continue
 						currX = nextX;
@@ -161,8 +162,7 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		int result = token.getOffset() + chunkOffsetInToken + xOffsetInChunk;
 
 		int offsetInToken = chunkEnd - chunkSize + xOffsetInChunk;
-		logConversion(info, started, textArea, token, x,
-			xOffsetInChunk, offsetInToken, result);
+		logConversion(info, started, textArea, token, x, xOffsetInChunk, offsetInToken, result);
 		return result;
 	}
 

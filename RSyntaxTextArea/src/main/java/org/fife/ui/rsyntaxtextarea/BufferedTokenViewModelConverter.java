@@ -133,15 +133,15 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	 * @param x         the coordinate to map
 	 * @return offset for the corresponding character in the documetn
 	 */
-	private int getListOffset(long started, String logMessage, TokenImpl token, FontMetrics fm, int begin, int charCount, float x0, float x) {
+	private int getListOffset(long started, String logMessage, TokenImpl token, FontMetrics fm,
+							  int begin, int charCount, float x0, float x) {
 		int xOffsetInChunk = getListOffset(fm, token.text, begin, begin, charCount, x0, x);
 
 		int xOffsetInToken = xOffsetInChunk - token.textOffset;
 		int tokenOffsetInDocument = token.getOffset();
 		int result = tokenOffsetInDocument + xOffsetInToken;
 
-		logConversion(logMessage, started, textArea, token, x,
-			xOffsetInChunk, xOffsetInToken, result);
+		logConversion(logMessage, started, textArea, token, x, xOffsetInChunk, xOffsetInToken, result);
 		assert result>=0 && result<=token.getEndOffset() : "Invalid result. Is x inside text segment?";
 		return result;
 	}
