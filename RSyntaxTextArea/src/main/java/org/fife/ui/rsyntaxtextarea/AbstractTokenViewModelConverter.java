@@ -126,25 +126,24 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 	protected static void logConversion(String info, long started, RSyntaxTextArea textArea, TokenImpl token, float x,
 										int offsetInChunk, int offsetInToken, int offsetInDocument) {
+		Level lvl = Level.FINE;
 
-		if (LOG.isLoggable(Level.FINE)) {
+		if (LOG.isLoggable(lvl)) {
 			long elapsed = System.currentTimeMillis() - started;
 
 			String docText = textArea.getText();
 			int length = docText.length();
-			String character = offsetInChunk < token.textCount
-				? new String(token.text, offsetInChunk, 1)
-				: null;
-			String substring = offsetInDocument < length
+			String docCharacter = offsetInDocument < length
 				? docText.substring(offsetInDocument, offsetInDocument + 1)
 				: null;
+			String tokenString = token.textCount<10 ? token.getLexeme() : token.getLexeme().substring(0, 10)+"...";
 
 			String logMessage = String.format(
-				"[%,d ms] %s: Total text length: %,d | Token Offset=%,d | Token Count=%,d | x=%.3f | " +
-					"offsetInChunk=%,d ('%s') | offsetInToken=%,d => offsetInDocument=%,d ('%s') %n",
-				elapsed, info, length, token.getOffset(), token.textCount, x,
-				offsetInChunk, character, offsetInToken, offsetInDocument, substring);
-			LOG.fine(logMessage);
+				"[%,d ms] %s: Total text length: %,d | Token [%s]: offset=%,d, count=%,d | x=%.3f | " +
+					"offsetInChunk=%,d | offsetInToken=%,d => offsetInDocument=%,d ('%s') %n",
+				elapsed, info, length, tokenString, token.getOffset(), token.textCount, x,
+				offsetInChunk, offsetInToken, offsetInDocument, docCharacter);
+			LOG.log(lvl, logMessage);
 		}
 	}
 
