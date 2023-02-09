@@ -7,6 +7,7 @@ import javax.swing.text.TabExpander;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
+import java.util.Arrays;
 
 public class TokenViewModelConverterTest {
 
@@ -62,7 +63,7 @@ public class TokenViewModelConverterTest {
 		assertListOffsetEquals(text, x, expected, actual);
 	}
 
-	static void assertListOffsetEquals(String text, float x, int expectedOffset, int actualOffset) {
+	static void assertListOffsetEquals(String text, float x, int expectedOffset, int actualOffset, Object... extra) {
 		String expectedCharacter = expectedOffset < 0 || expectedOffset >= text.length()
 			? null
 			: escape(text.substring(expectedOffset, expectedOffset + 1));
@@ -73,8 +74,9 @@ public class TokenViewModelConverterTest {
 		String truncatedText = text.length() < 40
 			? text
 			: String.format("'%s...%s'[%,d]", text.substring(0, 15), text.substring(text.length() - 15), text.length());
-		String msg = String.format("x=%.3f - Expected: %,d ('%s') | Actual: %,d ('%s') | Text: '%s'",
-			x, expectedOffset, expectedCharacter, actualOffset, actualCharacter, escape(truncatedText));
+		String moreInfo = extra.length<1 ? "" : Arrays.toString(extra);
+		String msg = String.format("x=%.3f - Expected: %,d ('%s') | Actual: %,d ('%s') | Text: '%s' %s",
+			x, expectedOffset, expectedCharacter, actualOffset, actualCharacter, escape(truncatedText), moreInfo);
 		Assertions.assertEquals(expectedOffset, actualOffset, msg);
 	}
 
