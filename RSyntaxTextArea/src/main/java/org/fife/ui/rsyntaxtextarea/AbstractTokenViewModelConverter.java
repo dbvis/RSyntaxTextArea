@@ -119,7 +119,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 	protected static void logConversion(long started, float x, char foundInCharacter, int resultingOffset) {
 		String escaped = foundInCharacter=='\t' ? "\\t" : String.valueOf(foundInCharacter);
-		LOG.info(() -> String.format("[%,d ms] x=%.0f found in character '%s' => offset=%,d",
+		LOG.fine(() -> String.format("[%,d ms] x=%.0f found in character '%s' => offset=%,d",
 			System.currentTimeMillis() - started, x, escaped, resultingOffset));
 	}
 
