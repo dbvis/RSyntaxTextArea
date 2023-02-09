@@ -157,8 +157,7 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		float relativeX = xInChunk / chunkWidth;
 		int xOffsetInChunk = Math.round(chunkSize * relativeX);
 
-		int chunkBeginInToken = chunkEnd - chunkSize;
-		int chunkOffsetInToken = chunkBeginInToken - token.textOffset;
+		int chunkOffsetInToken = chunkEnd - chunkSize;
 		int result = token.getOffset() + chunkOffsetInToken + xOffsetInChunk;
 
 		int offsetInToken = chunkEnd - chunkSize + xOffsetInChunk;
