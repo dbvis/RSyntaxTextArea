@@ -4,6 +4,7 @@ import org.fife.util.SwingUtils;
 
 import javax.swing.text.TabExpander;
 import java.awt.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -116,21 +117,33 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		}
 	}
 
+	protected static void logConversion(long started, float x, char foundInCharacter, int resultingOffset) {
+		String escaped = foundInCharacter=='\t' ? "\\t" : String.valueOf(foundInCharacter);
+		LOG.info(() -> String.format("[%,d ms] x=%.0f found in character '%s' => offset=%,d",
+			System.currentTimeMillis() - started, x, escaped, resultingOffset));
+	}
 
-	protected static String debugListOffset(
-		String info, long started, RSyntaxTextArea textArea, char[] text, float x, int tokenOffset,
-		int offsetInText, int offsetInToken, int offsetInDocument, int tokenTextCount) {
-		long elapsed = System.currentTimeMillis() - started;
 
-		String docText = textArea.getText();
-		int length = docText.length();
-		String character = offsetInText<text.length ? new String(text, offsetInText, 1) : null;
-		String substring = offsetInDocument<length ? docText.substring(offsetInDocument, offsetInDocument + 1) : null;
-		return String.format(
-			"%s: %,d ms: Total text length: %,d | Token Offset=%,d | Token Count=%,d | x=%.3f | " +
-				"offsetInText=%,d ('%s') | offsetInToken=%,d => offsetInDocument=%,d ('%s') %n",
-			info, elapsed, length, tokenOffset, tokenTextCount, x,
-			offsetInText, character, offsetInToken, offsetInDocument, substring);
+	protected static void logConversion(String info, long started, RSyntaxTextArea textArea, char[] text, float x,
+					int tokenOffset, int offsetInChunk, int offsetInToken, int offsetInDocument, int tokenTextCount) {
+
+		if (LOG.isLoggable(Level.FINE)) {
+			long elapsed = System.currentTimeMillis() - started;
+
+			String docText = textArea.getText();
+			int length = docText.length();
+			String character = offsetInChunk < text.length ? new String(text, offsetInChunk, 1) : null;
+			String substring = offsetInDocument < length
+				? docText.substring(offsetInDocument, offsetInDocument + 1)
+				: null;
+
+			String logMessage = String.format(
+				"[%,d ms] %s: Total text length: %,d | Token Offset=%,d | Token Count=%,d | x=%.3f | " +
+					"offsetInChunk=%,d ('%s') | offsetInToken=%,d => offsetInDocument=%,d ('%s') %n",
+				elapsed, info, length, tokenOffset, tokenTextCount, x,
+				offsetInChunk, character, offsetInToken, offsetInDocument, substring);
+			LOG.fine(logMessage);
+		}
 	}
 
 }

@@ -43,9 +43,10 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 			// loop over text in token
 			for (int i = start; i < end; i++) {
 				currX = nextX;
+				char currChar = text[i];
 
 				// TAB?
-				if (text[i] == '\t') {
+				if (currChar == '\t') {
 
 					// add width of characters before the tab and reset counter
 					if (charCount>0) {
@@ -68,8 +69,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 					if (x >= currX && x < nextX) {
 						int tabOffset = last + i - token.textOffset;
 						int result = x-currX < nextX-x ? tabOffset : tabOffset+1;
-						LOG.fine(()->String.format("%,d ms: Found in tab: x=%.3f => offset=%,d",
-							System.currentTimeMillis()-started, x, result));
+						logConversion(started, x, currChar, result);
 						return result;
 					}
 
@@ -134,14 +134,14 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	 * @return offset for the corresponding character in the documetn
 	 */
 	private int getListOffset(long started, String logMessage, TokenImpl token, FontMetrics fm, int begin, int charCount, float x0, float x) {
-		int xOffsetInText = getListOffset(fm, token.text, begin, begin, charCount, x0, x);
+		int xOffsetInChunk = getListOffset(fm, token.text, begin, begin, charCount, x0, x);
 
-		int xOffsetInToken = xOffsetInText - token.textOffset;
+		int xOffsetInToken = xOffsetInChunk - token.textOffset;
 		int tokenOffsetInDocument = token.getOffset();
 		int result = tokenOffsetInDocument + xOffsetInToken;
 
-		LOG.fine(() -> debugListOffset(logMessage, started, textArea, token.text, x, tokenOffsetInDocument,
-			xOffsetInText, xOffsetInToken, result, token.textCount));
+		logConversion(logMessage, started, textArea, token.text, x, tokenOffsetInDocument,
+			xOffsetInChunk, xOffsetInToken, result, token.textCount);
 		assert result>=0 && result<=token.getEndOffset() : "Invalid result. Is x inside text segment?";
 		return result;
 	}
