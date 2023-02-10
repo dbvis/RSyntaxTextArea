@@ -11,6 +11,9 @@ import java.util.logging.Logger;
  * An abstraction of features for converting x-coordinates in the view to the corresponding offset in the text model,
  * extracted from {@link TokenImpl#getListOffset(RSyntaxTextArea, TabExpander, float, float)} to separate concerns.
  * The main design objective is to improve performance when converting very long (+100k) strings.
+ * <p/>
+ * @implNote this class is <b>not</b> thread-safe; {@link #getListOffset(TokenImpl, float, float)} stores loop variables
+ * as fields. The instance must not be kept and reused, but should be instantiated on each invocation.
  */
 public abstract class AbstractTokenViewModelConverter implements TokenViewModelConverter {
 	private static final Logger LOG = Logger.getLogger(AbstractTokenViewModelConverter.class.getName());
@@ -166,15 +169,14 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		}
 	}
 
-	protected static void logConversion(long started, float x, char foundInCharacter, int resultingOffset) {
+	protected void logConversion(char foundInCharacter, int resultingOffset) {
 		String escaped = foundInCharacter=='\t' ? "\\t" : String.valueOf(foundInCharacter);
 		LOG.fine(() -> String.format("[%,d ms] x=%.0f found in character '%s' => offset=%,d",
 			System.currentTimeMillis() - started, x, escaped, resultingOffset));
 	}
 
 
-	protected static void logConversion(String info, long started, RSyntaxTextArea textArea, TokenImpl token, float x,
-										int offsetInChunk, int offsetInToken, int offsetInDocument) {
+	protected void logConversion(String info, int offsetInChunk, int offsetInToken, int offsetInDocument) {
 		Level lvl = Level.FINE;
 
 		if (LOG.isLoggable(lvl)) {

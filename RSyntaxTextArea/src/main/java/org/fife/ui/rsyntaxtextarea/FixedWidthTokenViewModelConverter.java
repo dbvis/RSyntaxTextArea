@@ -20,6 +20,7 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 	private final float charWidth;
 	private final float tabWidth;
 	private final FontMetrics fm;
+	private char currChar;
 
 	FixedWidthTokenViewModelConverter(RSyntaxTextArea textArea, FontMetrics fm) {
 		super(textArea, null);
@@ -34,18 +35,18 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		// loop over text in token
 		for (int i = start; i < end; i++) {
 			currX = nextX;
-			char currChar = text[i];
+			currChar = text[i];
 
 			// TAB?
 			if (currChar == '\t') {
-				int result = tabCharacterFound(i, currChar);
+				int result = tabCharacterFound(i);
 				if (result!=UNDEFINED) {
 					return result;
 				}
 
 			// WIDE (eg Kanji)?
 			} else if (isWideCharacter(currChar)) {
-				int result = wideCharacterFound(i, currChar);
+				int result = wideCharacterFound(i);
 				if (result!=UNDEFINED) {
 					return result;
 				}
@@ -56,14 +57,14 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 			}
 		}
 
-		// process remaining text after last breakpoint (if any)
+		// process chunk remaining after last breakpoint (if any)
 		if (charCount > 0) {
 			float width = chunkWidth();
 			float lastX = nextX + width;
 
 			// x inside text?
 			if (x<=lastX) {
-				return getChunkOffset("Tail", started, token, token.textCount, charCount, currX, x, width);
+				return getOffsetFromChunk("Tail", token.textCount, width);
 			} else {
 				nextX += width; // add width and continue to next token
 			}
@@ -73,19 +74,11 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		return UNDEFINED;
 	}
 
-	private Integer wideCharacterFound(int i, char currChar) {
-		// process buffered chunk?
-		if (charCount>0) {
-			float charsWidth = charCount>0 ? chunkWidth() : 0;
-			nextX = currX + charsWidth;
-
-			// done?
-			if (x < nextX) {
-				return getChunkOffset("In chunk before wide char",
-					started, token, i, charCount, currX, x, charsWidth);
-			}
-			currX = nextX;
-			charCount = 0;
+	private int wideCharacterFound(int i) {
+		// x in buffered chunk?
+		int chunkOffset = processChunk("Chunk before wide character", i);
+		if (chunkOffset!=UNDEFINED) {
+			return chunkOffset;
 		}
 
 		// do regular calculation
@@ -94,29 +87,17 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		charCount = 0;
 
 		// done?
-		int result = UNDEFINED;
-		if (x < nextX) {
-			result = last + i - token.textOffset;
-			logConversion(started, x, currChar, result);
-		}
-		return result;
+		return x >= currX && x < nextX ? toOffsetInDocument(i) : UNDEFINED;
 	}
 
-	private Integer tabCharacterFound(int i, char currChar) {
-		// process buffered chunk?
-		if (charCount>0) {
-			float charsWidth = charCount>0 ? chunkWidth() : 0;
-			nextX = stableX + charsWidth;
-
-			// done?
-			if (x < nextX) {
-				return getChunkOffset("In chunk before tab", started, token, i, charCount, currX, x, charsWidth);
-			}
-			currX = nextX;
-			charCount = 0;
+	private int tabCharacterFound(int i) {
+		// x in buffered chunk?
+		int chunkOffset = processChunk("Chunk before tab character", i);
+		if (chunkOffset!=UNDEFINED) {
+			return chunkOffset;
 		}
 
-		// tabstop
+		// calculate tabstop
 		int nofTabs = (int) (currX / tabWidth);
 		int nextTab = nofTabs + 1;
 		float nextTabX = nextTab * tabWidth;
@@ -124,13 +105,45 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		stableX = nextX; // Cache ending x-coord. of tab.
 
 		// done?
-		int result = UNDEFINED;
-		if (x >= currX && x < nextX) {
-			int tabOffset = last + i - token.textOffset;
-			result = x - currX < nextX - x ? tabOffset : tabOffset + 1;
-			logConversion(started, x, currChar, result);
-		}
+		return x >= currX && x < nextX ? toOffsetInDocument(i) : UNDEFINED;
+	}
+
+	/**
+	 * Convert the supplied offset in the token text to the corresponding offset in the document.
+	 *
+ 	 * @param offsetInToken the position of the current character ({@link #currChar}) in the token text array
+	 * @return offset in document
+	 */
+	private int toOffsetInDocument(int offsetInToken) {
+		int offsetInDocument = last + offsetInToken - token.textOffset;
+		boolean xBeforeMiddle = x - currX < nextX - x;
+		int result = xBeforeMiddle ? offsetInDocument : offsetInDocument + 1;
+		logConversion(currChar, result);
 		return result;
+	}
+
+
+	/**
+	 * Check the text chunk since last breakpoint. If x is inside chunk, return the offset, else {@link #UNDEFINED}.
+	 * @param debugInfo for the log
+	 * @param chunkEnd	where in the text array the text chunk ends (exclusive)
+	 * @return offset or {@link #UNDEFINED}
+	 */
+	private int processChunk(String debugInfo, int chunkEnd) {
+		if (charCount > 0) {
+			float charsWidth = charCount > 0 ? chunkWidth() : 0;
+			nextX = currX + charsWidth;
+
+			// done?
+			if (x < nextX) {
+				return getOffsetFromChunk(debugInfo, chunkEnd, charsWidth);
+			}
+			currX = nextX;
+			charCount = 0;
+		}
+
+		// Not found
+		return UNDEFINED;
 	}
 
 	/**
@@ -141,17 +154,27 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		return charCount * charWidth;
 	}
 
-
-	private int getChunkOffset(String info, long started, TokenImpl token, int chunkEnd, int chunkSize, float x0, float x, float chunkWidth) {
-		float xInChunk = x - x0;
+	/**
+	 * Get the offset from the current text chunk. {@link #x} must already be verified to be inside the chunk.
+	 *
+	 * @param info	for debug
+	 * @param chunkEnd	where the text chunk ends
+	 * @param chunkWidth	the number of pixels the chunk occupies
+	 * @return offset non-negative integer
+	 */
+	private int getOffsetFromChunk(String info, int chunkEnd, float chunkWidth) {
+		// in chunk
+		float xInChunk = x - currX;
 		float relativeX = xInChunk / chunkWidth;
-		int xOffsetInChunk = Math.round(chunkSize * relativeX);
+		int xOffsetInChunk = Math.round(charCount * relativeX);
 
-		int chunkOffsetInToken = chunkEnd - chunkSize;
-		int result = token.getOffset() + chunkOffsetInToken + xOffsetInChunk;
+		// in token
+		int chunkOffsetInToken = chunkEnd - charCount;
+		int xOffsetInToken = chunkOffsetInToken + xOffsetInChunk;
 
-		int offsetInToken = chunkEnd - chunkSize + xOffsetInChunk;
-		logConversion(info, started, textArea, token, x, xOffsetInChunk, offsetInToken, result);
+		// in document
+		int result = token.getOffset() + xOffsetInToken;
+		logConversion(info, xOffsetInChunk, xOffsetInToken, result);
 		return result;
 	}
 

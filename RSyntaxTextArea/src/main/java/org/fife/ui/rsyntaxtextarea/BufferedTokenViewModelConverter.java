@@ -55,7 +55,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 				if (x >= currX && x < nextX) {
 					int tabOffset = last + i - token.textOffset;
 					int result = x-currX < nextX-x ? tabOffset : tabOffset+1;
-					logConversion(started, x, currChar, result);
+					logConversion(currChar, result);
 					return result;
 				}
 
@@ -120,7 +120,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 		int tokenOffsetInDocument = token.getOffset();
 		int result = tokenOffsetInDocument + xOffsetInToken;
 
-		logConversion(logMessage, started, textArea, token, x, xOffsetInChunk, xOffsetInToken, result);
+		logConversion(logMessage, xOffsetInChunk, xOffsetInToken, result);
 		assert result>=0 && result<=token.getEndOffset() : "Invalid result. Is x inside text segment?";
 		return result;
 	}
