@@ -15,6 +15,7 @@ import java.awt.*;
  */
 class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
+	private static final int UNDEFINED = -1;
 	private final int tabSize;
 	private final float charWidth;
 	private final float tabWidth;
@@ -37,68 +38,20 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 			// TAB?
 			if (currChar == '\t') {
-				float charsWidth = charCount>0 ? chunkWidth() : 0;
-
-				// add width of characters before the tab and reset counter
-				if (charCount>0) {
-					nextX = stableX + charsWidth;
-
-					// done?
-					if (x < nextX) {
-						return getChunkOffset("Before tab", started, token, i, charCount, currX, x, charsWidth);
-					}
-					// nope - add width and continue
-					currX = nextX;
-					charCount = 0;
-				}
-
-				// tabstop
-				int nofTabs = (int) (currX / tabWidth);
-				int nextTab = nofTabs + 1;
-				float nextTabX = nextTab * tabWidth;
-				nextX = nextTabX;
-				stableX = nextX; // Cache ending x-coord. of tab.
-
-				// done?
-				if (x >= currX && x < nextX) {
-					int tabOffset = last + i - token.textOffset;
-					int result = x - currX < nextX - x ? tabOffset : tabOffset + 1;
-					logConversion(started, x, currChar, result);
+				int result = tabCharacterFound(i, currChar);
+				if (result!=UNDEFINED) {
 					return result;
 				}
 
+			// WIDE (eg Kanji)?
 			} else if (isWideCharacter(currChar)) {
-				if (charCount>0) {
-					float charsWidth = charCount>0 ? chunkWidth() : 0;
-
-					// add width of characters before the wide char and reset counter
-					nextX = currX + charsWidth;
-
-					// done?
-					if (x < nextX) {
-						return getChunkOffset("In chunk before wide char",
-							started, token, i, charCount, currX, x, charsWidth);
-					}
-					// nope - add cumulated width and continue
-					currX = nextX;
-					charCount = 0;
-
-
-				}
-				// do regular calculation
-				float charWidth = SwingUtils.charWidth(fm, currChar);
-				nextX += charWidth;
-				charCount = 0;
-
-				// done?
-				if (x < nextX) {
-					int result = last + i - token.textOffset;
-					logConversion(started, x, currChar, result);
+				int result = wideCharacterFound(i, currChar);
+				if (result!=UNDEFINED) {
 					return result;
 				}
-			} else {
 
-				// regular character - increment counter
+			// REGULAR CHARACTER
+			} else {
 				charCount++;
 			}
 		}
@@ -117,7 +70,67 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		}
 
 		// no hit
-		return -1;
+		return UNDEFINED;
+	}
+
+	private Integer wideCharacterFound(int i, char currChar) {
+		// process buffered chunk?
+		if (charCount>0) {
+			float charsWidth = charCount>0 ? chunkWidth() : 0;
+			nextX = currX + charsWidth;
+
+			// done?
+			if (x < nextX) {
+				return getChunkOffset("In chunk before wide char",
+					started, token, i, charCount, currX, x, charsWidth);
+			}
+			currX = nextX;
+			charCount = 0;
+		}
+
+		// do regular calculation
+		float charWidth = SwingUtils.charWidth(fm, currChar);
+		nextX += charWidth;
+		charCount = 0;
+
+		// done?
+		int result = UNDEFINED;
+		if (x < nextX) {
+			result = last + i - token.textOffset;
+			logConversion(started, x, currChar, result);
+		}
+		return result;
+	}
+
+	private Integer tabCharacterFound(int i, char currChar) {
+		// process buffered chunk?
+		if (charCount>0) {
+			float charsWidth = charCount>0 ? chunkWidth() : 0;
+			nextX = stableX + charsWidth;
+
+			// done?
+			if (x < nextX) {
+				return getChunkOffset("In chunk before tab", started, token, i, charCount, currX, x, charsWidth);
+			}
+			currX = nextX;
+			charCount = 0;
+		}
+
+		// tabstop
+		int nofTabs = (int) (currX / tabWidth);
+		int nextTab = nofTabs + 1;
+		float nextTabX = nextTab * tabWidth;
+		nextX = nextTabX;
+		stableX = nextX; // Cache ending x-coord. of tab.
+
+		// done?
+		int result = UNDEFINED;
+		if (x >= currX && x < nextX) {
+			int tabOffset = last + i - token.textOffset;
+			result = x - currX < nextX - x ? tabOffset : tabOffset + 1;
+			logConversion(started, x, currChar, result);
+		}
+		return result;
 	}
 
 	/**
