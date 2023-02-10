@@ -38,6 +38,8 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 	@Override
 	public int getListOffset(TokenImpl tokenList, float x0, float x) {
+		this.x0=x0;
+		this.x=x;
 		currX = x0;
 		nextX = x0;
 		stableX = x0;
@@ -55,7 +57,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 			charCount = 0;
 
 			// process token
-			int result = getTokenListOffset(token, x0, x);
+			int result = getTokenListOffset();
 			if (result >= 0) {
 				return result;
 			}
@@ -71,7 +73,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		return last;
 	}
 
-	protected abstract int getTokenListOffset(TokenImpl token, float x0, float x);
+	protected abstract int getTokenListOffset();
 
 
 	/**
@@ -146,7 +148,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 * @param c the character to check
 	 * @return boolean
 	 */
-	protected boolean isWideCharacter(char c) {
+	protected static boolean isWideCharacter(char c) {
 		Character.UnicodeScript script = Character.UnicodeScript.of(c);
 
 		// TODO improve - is there a robust approach to detect wide characters without calling FontMetrics?

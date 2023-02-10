@@ -4,12 +4,11 @@ import org.fife.util.SwingUtils;
 
 import javax.swing.text.TabExpander;
 import java.awt.*;
-import java.util.logging.Logger;
 
 /**
- * An implementation that buffers consecutive text and postpones the computation as long as possible and then
- * calculates the offset using a "divide and conquer" approach where the text block is recursively divided in halves
- * and compared to the x coordinates until the exact offset is found.
+ * An implementation that buffers consecutive text in "chunks" and postpones the computation as long as possible and
+ * then calculates the offset using a "divide and conquer" approach where the text chunk is recursively divided in
+ * halves and compared to the x coordinates until the exact offset is found.
  */
 class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
@@ -24,7 +23,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	}
 
 	@Override
-	protected int getTokenListOffset(TokenImpl token, float x0, float x) {
+	protected int getTokenListOffset() {
 		this.fm = textArea.getFontMetricsForTokenType(token.getType());
 
 		// loop over text in token
@@ -38,11 +37,11 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 				// add width of characters before the tab and reset counter
 				if (charCount>0) {
 					int begin = i - charCount;
-					float charsWidth = SwingUtils.charsWidth(fm, text, begin, charCount);
+					float charsWidth = chunkWidth(begin);
 					nextX = stableX + charsWidth;
 					// x inside chunk?
 					if (x < nextX) {
-						return getListOffset(started, "Chunk before Tab", token, fm, begin, charCount, stableX, x);
+						return getChunkOffset("Chunk before Tab", begin);
 					}
 					currX = nextX;
 					charCount = 0;
@@ -67,18 +66,18 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 				// TODO FIX! calculation yields false offset
 				// check chunk (improves performance by reducing max length of string to measure width for)
 				int begin = i - charCount;
-				float charsWidth = SwingUtils.charsWidth(fm, text, begin, charCount);
+				float charsWidth = chunkWidth(begin);
 				nextX += charsWidth;
 
 				// x inside chunk?
 				if (x < nextX) {
-					return getListOffset(started, "Chunk", token, fm, begin, charCount, stableX, x);
+					return getChunkOffset("Chunk", begin);
 				}
 				charCount = 0;
 				stableX = nextX; // Cache ending x-coord. of chunk.
 
-				// REGULAR CHARACTER
 			} else {
+				// REGULAR CHARACTER
 				charCount++;
 			}
 		}
@@ -86,11 +85,11 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 		// process remaining text after last tab or chunk (if any)
 		if (charCount > 0) {
 			int begin = end - charCount;
-			float width = SwingUtils.charsWidth(fm, text, begin, charCount);
+			float width = chunkWidth(begin);
 			float lastX = nextX + width;
 			// x inside text?
 			if (x<=lastX) {
-				return getListOffset(started, "Tail", token, fm, begin, charCount, stableX, x);
+				return getChunkOffset("Tail", begin);
 			} else {
 				nextX += width; // add width and continue to next token
 			}
@@ -99,20 +98,22 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	}
 
 	/**
-	 * Find the offset in the specified text segment. The x coordinate must already be verified to match the segment.
-	 *
-	 * @param started    for reporting elapsed time (debug)
-	 * @param logMessage where did we exit? (debug)
-	 * @param token      the token holding the text
-	 * @param fm         metric for the font
-	 * @param begin      where to start looking in the text
-	 * @param charCount  how many characters we should look for
-	 * @param x0         initial coordinate of the text
-	 * @param x          the coordinate to map
-	 * @return offset for the corresponding character in the documetn
+	 * Get the width of the text chunk starting at the specified offset.
+	 * @param begin where to start measuring
+	 * @return the number of pixels the text occupies
 	 */
-	private int getListOffset(long started, String logMessage, TokenImpl token, FontMetrics fm,
-							  int begin, int charCount, float x0, float x) {
+	private float chunkWidth(int begin) {
+		return SwingUtils.charsWidth(fm, text, begin, charCount);
+	}
+
+	/**
+	 * Find the offset in the specified chunk. The x coordinate must already be verified to match the segment.
+	 *
+	 * @param logMessage where did we exit? (debug)
+	 * @param begin      where to start looking in the text
+	 * @return offset for the corresponding character in the document
+	 */
+	private int getChunkOffset(String logMessage, int begin) {
 		int xOffsetInChunk = getListOffset(fm, token.text, begin, begin, charCount, x0, x);
 
 		int xOffsetInToken = xOffsetInChunk - token.textOffset;

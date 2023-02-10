@@ -3,7 +3,6 @@ package org.fife.ui.rsyntaxtextarea;
 import org.fife.util.SwingUtils;
 
 import java.awt.*;
-import java.util.logging.Logger;
 
 /**
  * An implementation that buffers consecutive text and postpones the computation as long as possible and then
@@ -17,7 +16,7 @@ import java.util.logging.Logger;
 class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
 	private final int tabSize;
-	private final float spaceWidth;
+	private final float charWidth;
 	private final float tabWidth;
 	private final FontMetrics fm;
 
@@ -25,12 +24,12 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		super(textArea, null);
 		this.fm = fm;
 		this.tabSize = textArea.getTabSize();
-		this.spaceWidth = SwingUtils.charWidth(fm, ' ');
-		this.tabWidth = spaceWidth * tabSize;
+		this.charWidth = SwingUtils.charWidth(fm, ' ');
+		this.tabWidth = charWidth * tabSize;
 	}
 
 	@Override
-	protected int getTokenListOffset(TokenImpl token, float x0, float x) {
+	protected int getTokenListOffset() {
 		// loop over text in token
 		for (int i = start; i < end; i++) {
 			currX = nextX;
@@ -38,8 +37,7 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 			// TAB?
 			if (currChar == '\t') {
-				int begin = i - charCount;
-				float charsWidth = charCount>0 ? SwingUtils.charsWidth(fm, text, begin, charCount) : 0;
+				float charsWidth = charCount>0 ? chunkWidth() : 0;
 
 				// add width of characters before the tab and reset counter
 				if (charCount>0) {
@@ -47,7 +45,7 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 					// done?
 					if (x < nextX) {
-						return getOffsetFromChunk("Before tab", started, token, i, charCount, currX, x, charsWidth);
+						return getChunkOffset("Before tab", started, token, i, charCount, currX, x, charsWidth);
 					}
 					// nope - add width and continue
 					currX = nextX;
@@ -71,15 +69,14 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 			} else if (isWideCharacter(currChar)) {
 				if (charCount>0) {
-					int begin = i - charCount;
-					float charsWidth = charCount>0 ? SwingUtils.charsWidth(fm, text, begin, charCount) : 0;
+					float charsWidth = charCount>0 ? chunkWidth() : 0;
 
 					// add width of characters before the wide char and reset counter
 					nextX = currX + charsWidth;
 
 					// done?
 					if (x < nextX) {
-						return getOffsetFromChunk("In chunk before wide char",
+						return getChunkOffset("In chunk before wide char",
 							started, token, i, charCount, currX, x, charsWidth);
 					}
 					// nope - add cumulated width and continue
@@ -108,13 +105,12 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 		// process remaining text after last breakpoint (if any)
 		if (charCount > 0) {
-			int begin = end - charCount;
-			float width = SwingUtils.charsWidth(fm, text, begin, charCount);
+			float width = chunkWidth();
 			float lastX = nextX + width;
 
 			// x inside text?
 			if (x<=lastX) {
-				return getOffsetFromChunk("Tail", started, token, token.textCount, charCount, currX, x, width);
+				return getChunkOffset("Tail", started, token, token.textCount, charCount, currX, x, width);
 			} else {
 				nextX += width; // add width and continue to next token
 			}
@@ -124,7 +120,16 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 		return -1;
 	}
 
-	private int getOffsetFromChunk(String info, long started, TokenImpl token, int chunkEnd, int chunkSize, float x0, float x, float chunkWidth) {
+	/**
+	 * Get the width of the text chunk. Since all characters are the same width, we can simply multiply.
+	 * @return the number of pixels the text occupies
+	 */
+	private float chunkWidth() {
+		return charCount * charWidth;
+	}
+
+
+	private int getChunkOffset(String info, long started, TokenImpl token, int chunkEnd, int chunkSize, float x0, float x, float chunkWidth) {
 		float xInChunk = x - x0;
 		float relativeX = xInChunk / chunkWidth;
 		int xOffsetInChunk = Math.round(chunkSize * relativeX);
