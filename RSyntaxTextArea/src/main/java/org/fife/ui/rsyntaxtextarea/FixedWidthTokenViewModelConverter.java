@@ -15,7 +15,6 @@ import java.awt.*;
  */
 class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
-	private static final int UNDEFINED = -1;
 	private final int tabSize;
 	private final float charWidth;
 	private final float tabWidth;

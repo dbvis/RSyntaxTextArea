@@ -94,7 +94,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 				nextX += width; // add width and continue to next token
 			}
 		}
-		return -1;
+		return UNDEFINED;
 	}
 
 	/**

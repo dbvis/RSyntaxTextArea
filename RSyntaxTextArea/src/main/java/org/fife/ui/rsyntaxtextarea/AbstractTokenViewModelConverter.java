@@ -18,6 +18,8 @@ import java.util.logging.Logger;
 public abstract class AbstractTokenViewModelConverter implements TokenViewModelConverter {
 	private static final Logger LOG = Logger.getLogger(AbstractTokenViewModelConverter.class.getName());
 
+	protected static final int UNDEFINED = -1; // undefined offset
+
 	protected final RSyntaxTextArea textArea;
 	protected final TabExpander tabExpander;
 
@@ -61,7 +63,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 			// process token
 			int result = getTokenListOffset();
-			if (result >= 0) {
+			if (result != UNDEFINED) {
 				return result;
 			}
 
