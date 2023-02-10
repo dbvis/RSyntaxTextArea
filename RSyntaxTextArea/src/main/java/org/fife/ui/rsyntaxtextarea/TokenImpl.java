@@ -467,7 +467,7 @@ public class TokenImpl implements Token {
 	protected AbstractTokenViewModelConverter getTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
 		FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
 		return SwingUtils.isMonospaced(fm)
-			? new FixedWidthTokenViewModelConverter(textArea, fm, e)
+			? new FixedWidthTokenViewModelConverter(textArea, fm)
 			: new BufferedTokenViewModelConverter(textArea, e);
 	}
 

@@ -21,11 +21,57 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	protected TokenImpl token;
 	protected float x0;
 	protected float x;
+	protected float currX;  // x-coordinate of current char.
+	protected float nextX;  // x-coordinate of next char.
+	protected float stableX; // Cached ending x-coord. of last tab or token.
+	protected int last; 	// offset of last token
+	protected long started;  // for logging elapsed time
+	protected char[] text;		// text of current token
+	protected int start;		// begining og current text chunk
+	protected int end;			// end of current text chunk
+	protected int charCount;	// size of current text chunk
 
 	protected AbstractTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
 		this.textArea = textArea;
 		this.tabExpander = e;
 	}
+
+	@Override
+	public int getListOffset(TokenImpl tokenList, float x0, float x) {
+		currX = x0;
+		nextX = x0;
+		stableX = x0;
+		token = tokenList;
+		last = token.getOffset();
+
+		// loop over tokens
+		started = System.currentTimeMillis();
+		while (token != null && token.isPaintable()) {
+
+			// setup token data
+			text = token.text;
+			start = token.textOffset;
+			end = start + token.textCount;
+			charCount = 0;
+
+			// process token
+			int result = getTokenListOffset(token, x0, x);
+			if (result >= 0) {
+				return result;
+			}
+
+		// no match in token - continue to next
+		stableX = nextX; // Cache ending x-coordinate of token.
+		last += token.textCount;
+		token = (TokenImpl) token.getNextToken();
+		}
+
+		// If we didn't find anything, return the end position of the text.
+		LOG.fine("EOL");
+		return last;
+	}
+
+	protected abstract int getTokenListOffset(TokenImpl token, float x0, float x);
 
 
 	/**
@@ -96,6 +142,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 * also in a monospace font? For performance reasons, the method checks {@link java.lang.Character.UnicodeScript}
 	 * rather than the actual width. See {@link Font} and the internal method
 	 * <code>sun.font.FontUtilities.isComplexCharCode(int code)</code>
+	 *
 	 * @param c the character to check
 	 * @return boolean
 	 */

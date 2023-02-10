@@ -121,8 +121,8 @@ public class FixedWithTokenViewModelConverterTest {
 		rsta.setTabSize(4);
 		TokenImpl token = new TokenImpl(text.toCharArray(), 0, text.length() - 1, 0, TokenTypes.IDENTIFIER, 0);
 
-		FontMetrics fm = new AbstractTokenViewModelConverterTest.MyFontMetrics(10f);
-		FixedWidthTokenViewModelConverter testee = new FixedWidthTokenViewModelConverter(rsta, fm, null);
+		AbstractTokenViewModelConverterTest.MyFontMetrics fm = new AbstractTokenViewModelConverterTest.MyFontMetrics(10f);
+		FixedWidthTokenViewModelConverter testee = new FixedWidthTokenViewModelConverter(rsta, fm);
 		int actual = testee.getListOffset(token, x0, x);
 		AbstractTokenViewModelConverterTest.assertListOffsetEquals(text, x, expected, actual);
 	}
