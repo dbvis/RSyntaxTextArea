@@ -4,8 +4,7 @@ import org.fife.util.SwingUtils;
 
 import javax.swing.text.TabExpander;
 import java.awt.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.function.Supplier;
 
 /**
  * An abstraction of features for converting x-coordinates in the view to the corresponding offset in the text model,
@@ -16,7 +15,9 @@ import java.util.logging.Logger;
  * as fields. The instance must not be kept and reused, but should be instantiated on each invocation.
  */
 public abstract class AbstractTokenViewModelConverter implements TokenViewModelConverter {
-	private static final Logger LOG = Logger.getLogger(AbstractTokenViewModelConverter.class.getName());
+	// TODO figure out how to control the logging using JVM params in IntelliJ launcher
+	//	private static final Logger LOG = Logger.getLogger(AbstractTokenViewModelConverter.class.getName());
+	private static final String DEBUG = System.getProperty("DEBUG");
 
 	protected static final int UNDEFINED = -1; // undefined offset
 
@@ -74,7 +75,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		}
 
 		// If we didn't find anything, return the end position of the text.
-		LOG.fine("EOL");
+		fine(()->"EOL");
 		return last;
 	}
 
@@ -104,7 +105,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 		// found exact position?
 		if (len<2) {
-			LOG.finest(()-> String.format("Found: x=%,.3f => offset=%,d ('%s')", x, off, chars[off]));
+			finest(()-> String.format("Found: x=%,.3f => offset=%,d ('%s')", x, off, chars[off]));
 			return off;
 		}
 
@@ -114,18 +115,18 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		int halfLen = len / 2; // split the current segment in two
 		int zeroToHalfLen = off + halfLen - off0; // length from start of text to half of current segment
 		float xMid = x0 + SwingUtils.charsWidth(fm, chars, off0, zeroToHalfLen);
-		LOG.finest(() -> debugListOffsetRecursiveEntry(chars, off, len, x0, x, halfLen, zeroToHalfLen, xMid));
+		finest(() -> debugListOffsetRecursiveEntry(chars, off, len, x0, x, halfLen, zeroToHalfLen, xMid));
 
 		// search first half?
 		if (x < xMid) {
-			LOG.finest(() -> debugListOffsetRecursiveCall(chars, "FIRST half", off, off + halfLen - 1, halfLen));
+			finest(() -> debugListOffsetRecursiveCall(chars, "FIRST half", off, off + halfLen - 1, halfLen));
 			return getListOffset(fm, chars, off0, off, halfLen, x0, x);
 		}
 
 		// search second half
 		int nextOff = off + halfLen;
 		int nextLen = len - halfLen;
-		LOG.finest(() -> debugListOffsetRecursiveCall(chars, "SECOND half", nextOff, nextOff + nextLen - 1, nextLen));
+		finest(() -> debugListOffsetRecursiveCall(chars, "SECOND half", nextOff, nextOff + nextLen - 1, nextLen));
 		return getListOffset(fm,  chars, off0, nextOff, nextLen, x0, x);
 	}
 
@@ -166,22 +167,21 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 				return (int)c>255;
 
 			default:
-				LOG.finest(()->String.format("'%c' wide (%s), value=%,d%n", c, script, (int)c));
+				finest(()->String.format("'%c' wide (%s), value=%,d%n", c, script, (int)c));
 				return true;
 		}
 	}
 
 	protected void logConversion(char foundInCharacter, int resultingOffset) {
 		String escaped = foundInCharacter=='\t' ? "\\t" : String.valueOf(foundInCharacter);
-		LOG.fine(() -> String.format("[%,d ms] x=%.0f found in character '%s' => offset=%,d",
+		fine(() -> String.format("[%,d ms] x=%.0f found in character '%s' => offset=%,d",
 			System.currentTimeMillis() - started, x, escaped, resultingOffset));
 	}
 
 
 	protected void logConversion(String info, int offsetInChunk, int offsetInToken, int offsetInDocument) {
-		Level lvl = Level.FINE;
 
-		if (LOG.isLoggable(lvl)) {
+		if ("fine".equalsIgnoreCase(DEBUG)) {
 			long elapsed = System.currentTimeMillis() - started;
 
 			String docText = textArea.getText();
@@ -193,10 +193,24 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 			String logMessage = String.format(
 				"[%,d ms] %s: Total text length: %,d | Token [%s]: offset=%,d, count=%,d | x=%.3f | " +
-					"offsetInChunk=%,d | offsetInToken=%,d => offsetInDocument=%,d ('%s') %n",
+					"offsetInChunk=%,d | offsetInToken=%,d => offsetInDocument=%,d ('%s')",
 				elapsed, info, length, tokenString, token.getOffset(), token.textCount, x,
 				offsetInChunk, offsetInToken, offsetInDocument, docCharacter);
-			LOG.log(lvl, logMessage);
+			fine(() -> logMessage);
+		}
+	}
+
+	protected static void fine(Supplier msg) {
+		// TODO figure out how to control the logging using JVM params in IntelliJ launcher
+		if ("fine".equalsIgnoreCase(DEBUG)) {
+			System.err.println(msg.get());
+		}
+	}
+
+	protected static void finest(Supplier msg) {
+		// TODO figure out how to control the logging using JVM params in IntelliJ launcher
+		if ("finest".equalsIgnoreCase(DEBUG)) {
+			System.err.println(msg.get());
 		}
 	}
 
