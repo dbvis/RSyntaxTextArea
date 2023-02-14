@@ -67,10 +67,10 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 				return result;
 			}
 
-		// no match in token - continue to next
-		stableX = nextX; // Cache ending x-coordinate of token.
-		last += token.textCount;
-		token = (TokenImpl) token.getNextToken();
+			// no match in token - continue to next
+			stableX = nextX; // Cache ending x-coordinate of token.
+			last += token.textCount;
+			token = (TokenImpl) token.getNextToken();
 		}
 
 		// If we didn't find anything, return the end position of the text.
