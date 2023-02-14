@@ -17,6 +17,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	 */
 	int listOffsetChunkSize = Integer.valueOf(System.getProperty("chunkSize", "-1")); // Disabled; yields offset errors unless token is first on line (?)
 	private FontMetrics fm;
+	private char currChar;
 
 	public BufferedTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
 		super(textArea, e);
@@ -27,13 +28,15 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 		this.fm = textArea.getFontMetricsForTokenType(token.getType());
 
 		// loop over text in token
-		for (int i = start; i < end; i++) {
+		int begin = token.textOffset;
+		int end = begin + token.textCount;
+		for (int i = begin; i < end; i++) {
 			currX = nextX;
-			char currChar = text[i];
+			currChar = text[i];
 
 			// TAB?
 			if (currChar == '\t') {
-				int offset = tabCharacterFound(i, currChar);
+				int offset = tabCharacterFound(i);
 				if (offset != UNDEFINED) {
 					return offset;
 				}
@@ -80,7 +83,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 		return UNDEFINED;
 	}
 
-	private int tabCharacterFound(int i, char currChar) {
+	private int tabCharacterFound(int i) {
 		// add width of characters before the tab and reset counter
 		if (charCount>0) {
 			int chunkOffset = processChunk("Before tab", i);

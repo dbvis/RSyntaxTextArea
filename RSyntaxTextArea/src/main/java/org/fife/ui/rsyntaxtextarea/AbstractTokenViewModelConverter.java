@@ -24,17 +24,18 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	protected final RSyntaxTextArea textArea;
 	protected final TabExpander tabExpander;
 
-	protected TokenImpl token;
-	protected float x;
-	protected float currX;  // x-coordinate of current char.
-	protected float nextX;  // x-coordinate of next char.
-	protected float stableX; // Cached ending x-coord. of last tab or token.
-	protected int last; 	// offset of last token
-	protected long started;  // for logging elapsed time
+	protected TokenImpl token;	// the current token being analyzed
 	protected char[] text;		// text of current token
-	protected int start;		// begining og current text chunk
-	protected int end;			// end of current text chunk
+
+	protected float x;			// the x-coordinate to convert to an offset
+	protected float currX;  	// x-coordinate of the character or text chunk currently analyzed
+	protected float nextX;  	// x-coordinate of next char.
+	protected float stableX; 	// Cached ending x-coordinate of analyzed text
+
+	protected int last; 		// offset of most recent token
 	protected int charCount;	// size of current text chunk
+
+	protected long started;  	// for logging elapsed time
 
 	protected AbstractTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
 		this.textArea = textArea;
@@ -56,8 +57,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 			// setup token data
 			text = token.text;
-			start = token.textOffset;
-			end = start + token.textCount;
 			charCount = 0;
 
 			// process token

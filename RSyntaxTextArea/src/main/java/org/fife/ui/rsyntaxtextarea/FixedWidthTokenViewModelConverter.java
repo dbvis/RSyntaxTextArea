@@ -32,7 +32,9 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 	@Override
 	protected int getTokenListOffset() {
 		// loop over text in token
-		for (int i = start; i < end; i++) {
+		int begin = token.textOffset;
+		int end = begin + token.textCount;
+		for (int i = begin; i < end; i++) {
 			currX = nextX;
 			currChar = text[i];
 
