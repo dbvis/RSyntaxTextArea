@@ -25,7 +25,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	protected final TabExpander tabExpander;
 
 	protected TokenImpl token;
-	protected float x0;
 	protected float x;
 	protected float currX;  // x-coordinate of current char.
 	protected float nextX;  // x-coordinate of next char.
@@ -44,7 +43,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 	@Override
 	public int getListOffset(TokenImpl tokenList, float x0, float x) {
-		this.x0=x0;
 		this.x=x;
 		currX = x0;
 		nextX = x0;

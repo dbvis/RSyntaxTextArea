@@ -123,7 +123,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	private int getOffsetFromChunk(String logMessage, int begin) {
 
 		// in chunk
-		int xOffsetInChunk = getListOffset(fm, token.text, begin, begin, charCount, x0, x);
+		int xOffsetInChunk = getListOffset(fm, token.text, begin, begin, charCount, currX, x);
 
 		// in token
 		int xOffsetInToken = xOffsetInChunk - token.textOffset;
