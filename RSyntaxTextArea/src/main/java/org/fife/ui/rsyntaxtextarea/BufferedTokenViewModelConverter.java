@@ -1,7 +1,5 @@
 package org.fife.ui.rsyntaxtextarea;
 
-import org.fife.util.SwingUtils;
-
 import javax.swing.text.TabExpander;
 import java.awt.*;
 
@@ -49,6 +47,7 @@ public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConve
 				if (offset != UNDEFINED) {
 					return offset;
 				}
+				charCount=1;
 			}
 
 			// REGULAR CHARACTER
@@ -109,11 +108,12 @@ public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConve
 
 	/**
 	 * Get the width of the text chunk starting at the specified offset.
+	 *
 	 * @param begin where to start measuring
 	 * @return the number of pixels the text occupies
 	 */
 	private float chunkWidth(int begin) {
-		return SwingUtils.charsWidth(fm, text, begin, charCount);
+		return charsWidth(fm, text, begin, charCount);
 	}
 
 	/**

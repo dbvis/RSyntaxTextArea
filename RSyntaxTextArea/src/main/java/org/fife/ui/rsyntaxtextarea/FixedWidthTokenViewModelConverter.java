@@ -1,7 +1,5 @@
 package org.fife.ui.rsyntaxtextarea;
 
-import org.fife.util.SwingUtils;
-
 import java.awt.*;
 
 /**
@@ -25,7 +23,7 @@ public class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelCon
 		super(textArea, null);
 		this.fm = fm;
 		this.tabSize = textArea.getTabSize();
-		this.charWidth = SwingUtils.charWidth(fm, ' ');
+		this.charWidth = charWidth(fm, ' ');
 		this.tabWidth = charWidth * tabSize;
 	}
 
@@ -83,14 +81,13 @@ public class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelCon
 		}
 
 		// do regular calculation
-		float charWidth = SwingUtils.charWidth(fm, currChar);
+		float charWidth = charWidth(fm, currChar);
 		nextX += charWidth;
 		charCount = 0;
 
 		// done?
 		return x >= currX && x < nextX ? toOffsetInDocument(i) : UNDEFINED;
 	}
-
 	private int tabCharacterFound(int i) {
 		// x in buffered chunk?
 		int chunkOffset = processChunk("Chunk before tab character", i);
@@ -149,6 +146,7 @@ public class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelCon
 
 	/**
 	 * Get the width of the text chunk. Since all characters are the same width, we can simply multiply.
+	 *
 	 * @return the number of pixels the text occupies
 	 */
 	private float chunkWidth() {

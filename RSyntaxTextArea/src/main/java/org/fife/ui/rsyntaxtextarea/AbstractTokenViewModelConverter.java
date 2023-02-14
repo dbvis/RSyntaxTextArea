@@ -4,6 +4,8 @@ import org.fife.util.SwingUtils;
 
 import javax.swing.text.TabExpander;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.Rectangle2D;
 import java.util.function.Supplier;
 
 /**
@@ -111,7 +113,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		// adding width of segments cause rounding errors on long (+2k) text blocks in fractionally scaled context
 		int halfLen = len / 2; // split the current segment in two
 		int zeroToHalfLen = off + halfLen - off0; // length from start of text to half of current segment
-		float xMid = x0 + SwingUtils.charsWidth(fm, chars, off0, zeroToHalfLen);
+		float xMid = x0 + charsWidth(fm, chars, off0, zeroToHalfLen);
 		finest(() -> debugListOffsetRecursiveEntry(chars, off, len, x0, x, halfLen, zeroToHalfLen, xMid));
 
 		// search first half?
@@ -125,6 +127,26 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		int nextLen = len - halfLen;
 		finest(() -> debugListOffsetRecursiveCall(chars, "SECOND half", nextOff, nextOff + nextLen - 1, nextLen));
 		return getListOffset(fm,  chars, off0, nextOff, nextLen, x0, x);
+	}
+
+	protected static float charWidth(FontMetrics fm, char currChar) {
+		return charsWidth(fm, new char[]{currChar}, 0, 1);
+	}
+
+	protected static float charsWidth(FontMetrics fm, char[] chars, int begin, int count) {
+		float fw = SwingUtils.charsWidth(fm, chars, begin, count);
+		assert fw==doubleCharsWidth(fw, fm, chars, begin, count) : "float value doesn't match double value";
+		return fw;
+	}
+
+	private static double doubleCharsWidth(float fw, FontMetrics fm, char[] chars, int begin, int count) {
+
+		FontRenderContext frc = fm.getFontRenderContext();
+		Font font = fm.getFont();
+		int limit = begin + count;
+		Rectangle2D bounds = font.getStringBounds(chars, begin, limit, frc);
+		double dw = bounds.getWidth();
+		return dw;
 	}
 
 	private static String debugListOffsetRecursiveCall(char[] chars, String info, int first, int last, int nextLen) {
