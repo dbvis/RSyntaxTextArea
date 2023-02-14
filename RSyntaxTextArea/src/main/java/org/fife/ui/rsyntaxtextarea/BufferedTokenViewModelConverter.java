@@ -10,12 +10,12 @@ import java.awt.*;
  * then calculates the offset using a "divide and conquer" approach where the text chunk is recursively divided in
  * halves and compared to the x coordinates until the exact offset is found.
  */
-class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
+public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
 	/**
 	 * Max size of text strings to process when converting x coordinate to model offset.
 	 */
-	int listOffsetChunkSize = Integer.valueOf(System.getProperty("chunkSize", "-1")); // Disabled; yields offset errors unless token is first on line (?)
+	private int listOffsetChunkSize = Integer.valueOf(System.getProperty("chunkSize", "-1")); // Disabled; yields offset errors unless token is first on line (?)
 	private FontMetrics fm;
 	private char currChar;
 

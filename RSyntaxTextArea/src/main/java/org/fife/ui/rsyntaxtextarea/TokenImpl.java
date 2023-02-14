@@ -464,11 +464,17 @@ public class TokenImpl implements Token {
 	 * @param e How to expand tabs.
 	 * @return AbstractTokenViewModelConverter
 	 */
-	protected AbstractTokenViewModelConverter getTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
-		FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
-		return SwingUtils.isMonospaced(fm)
-			? new FixedWidthTokenViewModelConverter(textArea, fm)
-			: new BufferedTokenViewModelConverter(textArea, e);
+	protected TokenViewModelConverter getTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
+		String converter = System.getProperty("CONVERTER");
+
+		if (BufferedTokenViewModelConverter.class.getSimpleName().equals(converter)) {
+			return new BufferedTokenViewModelConverter(textArea, e);
+		}
+		if (FixedWidthTokenViewModelConverter.class.getSimpleName().equals(converter)) {
+			FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
+			return new FixedWidthTokenViewModelConverter(textArea, fm);
+		}
+		return new DefaultTokenViewModelConverter(textArea, e);
 	}
 
 	@Override

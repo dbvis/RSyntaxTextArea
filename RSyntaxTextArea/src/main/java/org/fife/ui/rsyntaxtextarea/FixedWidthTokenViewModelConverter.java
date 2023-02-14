@@ -13,7 +13,7 @@ import java.awt.*;
  * measured before resuming operation. Alas, the performance gain will be essentially lost if the text holds many
  * such characters.
  */
-class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter {
+public class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
 	private final int tabSize;
 	private final float charWidth;

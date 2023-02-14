@@ -68,9 +68,7 @@ public class BufferedTokenViewModelConverterTest {
 		RSyntaxTextArea rsta = new AbstractTokenViewModelConverterTest.MyRSyntaxTextArea(text);
 
 		BufferedTokenViewModelConverter testee = new BufferedTokenViewModelConverter(rsta, te);
-		if (chunkSize>0) {
-			testee.listOffsetChunkSize = chunkSize;
-		}
+		System.setProperty("chunkSize", chunkSize>0 ? String.valueOf(chunkSize) : "-1");
 
 		TokenImpl token = new TokenImpl(text.toCharArray(), 0, text.length() - 1, 0, TokenTypes.IDENTIFIER, 0);
 		int actual = testee.getListOffset(token, x0, x);
