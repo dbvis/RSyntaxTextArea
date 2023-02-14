@@ -33,66 +33,73 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
 			// TAB?
 			if (currChar == '\t') {
-
-				// add width of characters before the tab and reset counter
-				if (charCount>0) {
-					int begin = i - charCount;
-					float charsWidth = chunkWidth(begin);
-					nextX = stableX + charsWidth;
-					// x inside chunk?
-					if (x < nextX) {
-						return getChunkOffset("Chunk before Tab", begin);
-					}
-					currX = nextX;
-					charCount = 0;
+				int offset = tabCharacterFound(i, currChar);
+				if (offset != UNDEFINED) {
+					return offset;
 				}
-
-				// tabstop
-				nextX = tabExpander.nextTabStop(nextX, 0);
-				stableX = nextX; // Cache ending x-coord. of tab.
-
-				// done?
-				if (x >= currX && x < nextX) {
-					int tabOffset = last + i - token.textOffset;
-					int result = x-currX < nextX-x ? tabOffset : tabOffset+1;
-					logConversion(currChar, result);
-					return result;
-				}
-
 			}
 
 			// CHUNK LIMIT?
 			else if (listOffsetChunkSize>0 && charCount>0 && charCount % listOffsetChunkSize == 0) {
 				// TODO FIX! calculation yields false offset
-				// check chunk (improves performance by reducing max length of string to measure width for)
-				int begin = i - charCount;
-				float charsWidth = chunkWidth(begin);
-				nextX += charsWidth;
-
-				// x inside chunk?
-				if (x < nextX) {
-					return getChunkOffset("Chunk", begin);
+				int offset = processChunk("Chunksize", i);
+				if (offset != UNDEFINED) {
+					return offset;
 				}
-				charCount = 0;
-				stableX = nextX; // Cache ending x-coord. of chunk.
+			}
 
-			} else {
-				// REGULAR CHARACTER
+			// REGULAR CHARACTER
+			else {
 				charCount++;
 			}
 		}
 
 		// process remaining text after last tab or chunk (if any)
 		if (charCount > 0) {
-			int begin = end - charCount;
-			float width = chunkWidth(begin);
-			float lastX = nextX + width;
-			// x inside text?
-			if (x<=lastX) {
-				return getChunkOffset("Tail", begin);
-			} else {
-				nextX += width; // add width and continue to next token
+			int offset = processChunk("Tail", end);
+			if (offset != UNDEFINED) {
+				return offset;
 			}
+		}
+		return UNDEFINED;
+	}
+
+	private int processChunk(String logMessage, int chunkEnd) {
+		// check chunk (improves performance by reducing max length of string to measure width for)
+		int begin = chunkEnd - charCount;
+		float charsWidth = chunkWidth(begin);
+		nextX = stableX + charsWidth;
+		stableX = nextX; // Cache ending x-coord. of chunk.
+
+		// x inside chunk?
+		if (x >= currX && x < nextX) {
+			return getOffsetFromChunk(logMessage, begin);
+		}
+		currX = nextX;
+		charCount = 0;
+		return UNDEFINED;
+	}
+
+	private int tabCharacterFound(int i, char currChar) {
+		// add width of characters before the tab and reset counter
+		if (charCount>0) {
+			int chunkOffset = processChunk("Before tab", i);
+			if (chunkOffset!=UNDEFINED) {
+				return chunkOffset;
+			}
+		}
+
+		// tabstop
+		nextX = tabExpander.nextTabStop(stableX, 0);
+		stableX = nextX; // Cache ending x-coord. of tab.
+
+		// x in tab?
+		if (x >= currX && x < nextX) {
+			int tabOffset = last + i - token.textOffset;
+			boolean beforeMiddleOfTab = x - currX < nextX - x;
+			int result = beforeMiddleOfTab ? tabOffset : tabOffset+1;
+			logConversion(currChar, result);
+			return result;
 		}
 		return UNDEFINED;
 	}
@@ -113,10 +120,15 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	 * @param begin      where to start looking in the text
 	 * @return offset for the corresponding character in the document
 	 */
-	private int getChunkOffset(String logMessage, int begin) {
+	private int getOffsetFromChunk(String logMessage, int begin) {
+
+		// in chunk
 		int xOffsetInChunk = getListOffset(fm, token.text, begin, begin, charCount, x0, x);
 
+		// in token
 		int xOffsetInToken = xOffsetInChunk - token.textOffset;
+
+		// in document
 		int tokenOffsetInDocument = token.getOffset();
 		int result = tokenOffsetInDocument + xOffsetInToken;
 

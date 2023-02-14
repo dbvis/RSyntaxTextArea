@@ -38,16 +38,16 @@ class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelConverter 
 
 			// TAB?
 			if (currChar == '\t') {
-				int result = tabCharacterFound(i);
-				if (result!=UNDEFINED) {
-					return result;
+				int offset = tabCharacterFound(i);
+				if (offset!=UNDEFINED) {
+					return offset;
 				}
 
 			// WIDE (eg Kanji)?
 			} else if (isWideCharacter(currChar)) {
-				int result = wideCharacterFound(i);
-				if (result!=UNDEFINED) {
-					return result;
+				int offset = wideCharacterFound(i);
+				if (offset!=UNDEFINED) {
+					return offset;
 				}
 
 			// REGULAR CHARACTER
