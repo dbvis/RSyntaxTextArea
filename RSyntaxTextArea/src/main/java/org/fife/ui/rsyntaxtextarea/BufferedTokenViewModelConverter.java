@@ -11,9 +11,9 @@ import java.awt.*;
 public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
 	/**
-	 * Max size of text strings to process when converting x coordinate to model offset.
+	 * Max size of text strings to buffer when converting x coordinate to model offset.
 	 */
-	private int listOffsetChunkSize = Integer.valueOf(System.getProperty("chunkSize", "-1")); // Disabled; yields offset errors unless token is first on line (?)
+	private int listOffsetChunkSize = Integer.valueOf(System.getProperty("chunkSize", "50000"));
 	private FontMetrics fm;
 	private char currChar;
 
@@ -41,8 +41,9 @@ public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConve
 			}
 
 			// CHUNK LIMIT?
+			// (improves performance by reducing max length of string to measure width for)
 			else if (listOffsetChunkSize>0 && charCount>0 && charCount % listOffsetChunkSize == 0) {
-				// TODO FIX! calculation yields false offset
+				// TODO calculation yields false offset if chunksize is too small
 				int offset = processChunk("Chunksize", i);
 				if (offset != UNDEFINED) {
 					return offset;
@@ -67,10 +68,9 @@ public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConve
 	}
 
 	private int processChunk(String logMessage, int chunkEnd) {
-		// check chunk (improves performance by reducing max length of string to measure width for)
 		int begin = chunkEnd - charCount;
-		float charsWidth = chunkWidth(begin);
-		nextX = stableX + charsWidth;
+		float chunkWidth = chunkWidth(begin);
+		nextX = stableX + chunkWidth;
 		stableX = nextX; // Cache ending x-coord. of chunk.
 
 		// x inside chunk?

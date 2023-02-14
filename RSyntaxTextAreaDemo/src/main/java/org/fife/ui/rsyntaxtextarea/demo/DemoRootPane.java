@@ -230,7 +230,8 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		converterCombo.addItem(DefaultTokenViewModelConverter.class);
 		converterCombo.setSelectedIndex(0);
 
-		JSpinner chunkSizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 500));
+		JSpinner chunkSizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 200000, 1000));
+		chunkSizeSpinner.setValue(50000);
 		chunkSizeSpinner.setToolTipText("Chunksize for " + BufferedTokenViewModelConverter.class.getSimpleName());
 		chunkSizeSpinner.addChangeListener(e -> System.setProperty("chunkSize", ((JSpinner) e.getSource()).getValue().toString()));
 		converterCombo.addItemListener(e-> chunkSizeSpinner.setEnabled (e.getItem().equals(BufferedTokenViewModelConverter.class)));
