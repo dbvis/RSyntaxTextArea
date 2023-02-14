@@ -15,7 +15,7 @@ class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 	/**
 	 * Max size of text strings to process when converting x coordinate to model offset.
 	 */
-	int listOffsetChunkSize = -1; // 1000; // Disabled; yields offset errors unless token is first on line (?)
+	int listOffsetChunkSize = Integer.valueOf(System.getProperty("chunkSize", "-1")); // Disabled; yields offset errors unless token is first on line (?)
 	private FontMetrics fm;
 
 	public BufferedTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {

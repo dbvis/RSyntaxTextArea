@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 public abstract class AbstractTokenViewModelConverter implements TokenViewModelConverter {
 	// TODO figure out how to control the logging using JVM params in IntelliJ launcher
 	//	private static final Logger LOG = Logger.getLogger(AbstractTokenViewModelConverter.class.getName());
-	private static final String DEBUG = System.getProperty("DEBUG");
+	private static final String DEBUG = System.getProperty("DEBUG", "INFO");
 
 	protected static final int UNDEFINED = -1; // undefined offset
 
@@ -179,7 +179,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 	protected void logConversion(String info, int offsetInChunk, int offsetInToken, int offsetInDocument) {
 
-		if ("fine".equalsIgnoreCase(DEBUG)) {
+		if (isFine()) {
 			long elapsed = System.currentTimeMillis() - started;
 
 			String docText = textArea.getText();
@@ -198,18 +198,25 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		}
 	}
 
+	// TODO figure out how to control the logging using JVM params in IntelliJ launcher
 	protected static void fine(Supplier msg) {
-		// TODO figure out how to control the logging using JVM params in IntelliJ launcher
-		if ("fine".equalsIgnoreCase(DEBUG)) {
+		if (isFine()) {
 			System.err.println(msg.get());
 		}
 	}
 
 	protected static void finest(Supplier msg) {
-		// TODO figure out how to control the logging using JVM params in IntelliJ launcher
-		if ("finest".equalsIgnoreCase(DEBUG)) {
+		if (isFinest()) {
 			System.err.println(msg.get());
 		}
+	}
+
+	private static boolean isFine() {
+		return DEBUG.toLowerCase().equals("fine");
+	}
+
+	private static boolean isFinest() {
+		return DEBUG.toLowerCase().startsWith("fine");
 	}
 
 }
