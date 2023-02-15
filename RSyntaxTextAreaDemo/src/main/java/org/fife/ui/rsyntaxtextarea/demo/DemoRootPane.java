@@ -237,7 +237,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 			System.setProperty(BufferedTokenViewModelConverter.PROPERTY_CHUNK_SIZE,
 				((JSpinner) e.getSource()).getValue().toString()));
 		converterCombo.addItemListener(e->
-			chunkSizeSpinner.setEnabled (e.getItem().equals(BufferedTokenViewModelConverter.class)));
+			chunkSizeSpinner.setEnabled(e.getItem().equals(BufferedTokenViewModelConverter.class)));
 
 		panel.add(new JLabel("Tab Size:"));
 		panel.add(tabSize);
