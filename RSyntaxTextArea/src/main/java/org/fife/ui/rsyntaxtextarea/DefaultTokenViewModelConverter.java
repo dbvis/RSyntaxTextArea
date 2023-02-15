@@ -2,8 +2,11 @@ package org.fife.ui.rsyntaxtextarea;
 
 import org.fife.util.SwingUtils;
 
+import javax.swing.text.Segment;
 import javax.swing.text.TabExpander;
+import javax.swing.text.Utilities;
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 
 public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 	private final RSyntaxTextArea textArea;
@@ -67,5 +70,71 @@ public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 
 	}
 
+	@Override
+	public Rectangle2D listOffsetToView(TokenImpl token, TabExpander e, int pos, float x0, Rectangle2D rect) {
+		float stableX = x0; // Cached ending x-coord. of last tab or token.
+		FontMetrics fm;
+		Segment s = new Segment();
+
+		while (token != null && token.isPaintable()) {
+
+			fm = textArea.getFontMetricsForTokenType(token.getType());
+			if (fm == null) {
+				return rect; // Don't return null as things will error.
+			}
+			char[] text = token.text;
+			int start = token.textOffset;
+			int end = start + token.textCount;
+
+			// If this token contains the position for which to get the
+			// bounding box...
+			if (token.containsPosition(pos)) {
+
+				s.array = token.text;
+				s.offset = token.textOffset;
+				s.count = pos - token.getOffset();
+
+				// Must use this (actually fm.charWidth()), and not
+				// fm.charsWidth() for returned value to match up with where
+				// text is actually painted on OS X!
+				float w = Utilities.getTabbedTextWidth(s, fm, stableX, e,
+					token.getOffset());
+				SwingUtils.setX(rect, stableX + w);
+				end = token.documentToToken(pos);
+
+				if (text[end] == '\t') {
+					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, ' '));
+				}
+				else {
+					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, text[end]));
+				}
+
+				return rect;
+
+			}
+
+			// If this token does not contain the position for which to get
+			// the bounding box...
+			else {
+				s.array = token.text;
+				s.offset = token.textOffset;
+				s.count = token.textCount;
+				stableX += Utilities.getTabbedTextWidth(s, fm, stableX, e,
+					token.getOffset());
+			}
+
+			token = (TokenImpl)token.getNextToken();
+
+		}
+
+		// If we didn't find anything, we're at the end of the line. Return
+		// a width of 1 (so selection highlights don't extend way past line's
+		// text). A ConfigurableCaret will know to paint itself with a larger
+		// width.
+		SwingUtils.setX(rect, stableX);
+		SwingUtils.setWidth(rect, 1);
+		return rect;
+
+	}
 
 }

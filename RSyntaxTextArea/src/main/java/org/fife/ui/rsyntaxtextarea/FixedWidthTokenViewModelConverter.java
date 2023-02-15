@@ -1,6 +1,10 @@
 package org.fife.ui.rsyntaxtextarea;
 
+import org.fife.util.SwingUtils;
+
+import javax.swing.text.Utilities;
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 
 /**
  * An implementation that buffers consecutive text and postpones the computation as long as possible and then
@@ -20,7 +24,7 @@ public class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelCon
 	private char currChar;
 
 	FixedWidthTokenViewModelConverter(RSyntaxTextArea textArea, FontMetrics fm) {
-		super(textArea, null);
+		super(textArea, null);  // TabExpander not used; we calculate fillers based on fixed width
 		this.fm = fm;
 		this.tabSize = textArea.getTabSize();
 		this.charWidth = charWidth(fm, ' ');
@@ -71,6 +75,56 @@ public class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelCon
 
 		// no hit
 		return UNDEFINED;
+	}
+
+	@Override
+	protected Rectangle2D tokenListOffsetToView() {
+
+		if (fm == null) {
+			return null;
+		}
+		char[] text = token.text;
+		int start = token.textOffset;
+		int end = start + token.textCount;
+
+		// If this token contains the position for which to get the
+		// bounding box...
+		if (token.containsPosition(pos)) {
+
+			s.array = token.text;
+			s.offset = token.textOffset;
+			s.count = pos - token.getOffset();
+
+			// Must use this (actually fm.charWidth()), and not
+			// fm.charsWidth() for returned value to match up with where
+			// text is actually painted on OS X!
+			float w = Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander,
+				token.getOffset());
+			SwingUtils.setX(rect, stableX + w);
+			end = token.documentToToken(pos);
+
+			if (text[end] == '\t') {
+				SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, ' '));
+			}
+			else {
+				SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, text[end]));
+			}
+
+			return rect;
+		}
+
+		// If this token does not contain the position for which to get
+		// the bounding box...
+		else {
+			s.array = token.text;
+			s.offset = token.textOffset;
+			s.count = token.textCount;
+			stableX += Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander,
+				token.getOffset());
+		}
+
+		// not found in this token
+		return null;
 	}
 
 	private int wideCharacterFound(int i) {

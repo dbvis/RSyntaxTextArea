@@ -2,6 +2,7 @@ package org.fife.ui.rsyntaxtextarea;
 
 import org.fife.util.SwingUtils;
 
+import javax.swing.text.Segment;
 import javax.swing.text.TabExpander;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
@@ -29,6 +30,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	protected TokenImpl token;	// the current token being analyzed
 	protected char[] text;		// text of current token
 
+	// view to model (getListOffset())
 	protected float x;			// the x-coordinate to convert to an offset
 	protected float currX;  	// x-coordinate of the character or text chunk currently analyzed
 	protected float nextX;  	// x-coordinate of next char.
@@ -38,6 +40,11 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	protected int charCount;	// size of current text chunk
 
 	protected long started;  	// for logging elapsed time
+
+	// model to view (listOffsetToView())
+	protected int pos;			// the model offset
+	protected Segment s;	//
+	protected Rectangle2D rect;	// for returning results (reused to minimize memory allocations)
 
 	protected AbstractTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
 		this.textArea = textArea;
@@ -80,6 +87,34 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 	protected abstract int getTokenListOffset();
 
+	@Override
+	public Rectangle2D listOffsetToView(TokenImpl mainToken, TabExpander e, int pos, float x0, Rectangle2D originalRectangle) {
+		this.token = mainToken;
+		this.stableX = x0; // Cached ending x-coord. of last tab or token.
+		this.pos = pos;
+		this.s = new Segment();
+		this.rect = originalRectangle;
+
+		// loop over tokens
+		started = System.currentTimeMillis();
+		while (token != null && token.isPaintable()) {
+			Rectangle2D result = tokenListOffsetToView();
+			if (result != null) {
+				return result;
+			}
+			token = (TokenImpl) token.getNextToken();
+		}
+
+		// If we didn't find anything, we're at the end of the line.
+		// Return a width of 1 (so selection highlights don't extend way past line's text).
+		// Don't return null as things will error.
+		// A ConfigurableCaret will know to paint itself with a larger width.
+		SwingUtils.setX(rect, stableX);
+		SwingUtils.setWidth(rect, 1);
+		return rect;
+	}
+
+	protected abstract Rectangle2D tokenListOffsetToView();
 
 	/**
 	 * Determines the offset into the supplied text block that covers pixel location <code>x</code> using a faster
@@ -91,7 +126,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 *
 	 * @param fm    FontMetrics for the token font
 	 * @param chars the array of text to process
-	 * @param off0 index of first character of the text block in the array
+	 * @param off0  index of first character of the text block in the array
 	 * @param off   index of first character in the array fragment to process in this run
 	 * @param len   number of characters to process
 	 * @param x0    The pixel x-location that is the beginning of the text segment
@@ -135,11 +170,11 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 	protected static float charsWidth(FontMetrics fm, char[] chars, int begin, int count) {
 		float fw = SwingUtils.charsWidth(fm, chars, begin, count);
-		assert fw==doubleCharsWidth(fw, fm, chars, begin, count) : "float value doesn't match double value";
+		assert fw==doubleCharsWidth(fm, chars, begin, count) : "float value doesn't match double value";
 		return fw;
 	}
 
-	private static double doubleCharsWidth(float fw, FontMetrics fm, char[] chars, int begin, int count) {
+	private static double doubleCharsWidth(FontMetrics fm, char[] chars, int begin, int count) {
 
 		FontRenderContext frc = fm.getFontRenderContext();
 		Font font = fm.getFont();
@@ -219,21 +254,21 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		}
 	}
 
-	// TODO figure out how to control the logging using JVM params in IntelliJ launcher
-	protected static void fine(Supplier msg) {
+	// TODO figure out how to control the logging using JVM params and config file in IntelliJ launcher
+	protected static void fine(Supplier<String> msg) {
 		if (isFine()) {
 			System.err.println(msg.get());
 		}
 	}
 
-	protected static void finest(Supplier msg) {
+	protected static void finest(Supplier<String> msg) {
 		if (isFinest()) {
 			System.err.println(msg.get());
 		}
 	}
 
 	private static boolean isFine() {
-		return DEBUG.toLowerCase().equals("fine");
+		return DEBUG.equalsIgnoreCase("fine");
 	}
 
 	private static boolean isFinest() {

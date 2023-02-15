@@ -32,7 +32,7 @@ import java.util.logging.Logger;
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
 public class TokenImpl implements Token {
-	private static final Logger LOG = Logger.getLogger(TokenImpl.class.getName());
+//	private static final Logger LOG = Logger.getLogger(TokenImpl.class.getName());
 
 	/**
 	 * The text this token represents.  This is implemented as a segment so we
@@ -459,10 +459,10 @@ public class TokenImpl implements Token {
 	}
 
 	/**
-	 * Get the appropriate implementation of {@link AbstractTokenViewModelConverter}
+	 * Get the appropriate implementation of {@link TokenViewModelConverter}
 	 * @param textArea The text area from which the token list was derived.
 	 * @param e How to expand tabs.
-	 * @return AbstractTokenViewModelConverter
+	 * @return TokenViewModelConverter
 	 */
 	protected TokenViewModelConverter getTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
 		String converter = System.getProperty("CONVERTER");
@@ -690,74 +690,9 @@ public class TokenImpl implements Token {
 	@Override
 	public Rectangle2D listOffsetToView(RSyntaxTextArea textArea, TabExpander e,
 			int pos, float x0, Rectangle2D rect) {
-
-		LOG.finest(()->"pos=" + pos + ", x0=" + x0);
-		float stableX = x0; // Cached ending x-coord. of last tab or token.
-		TokenImpl token = this;
-		FontMetrics fm;
-		Segment s = new Segment();
-
-		while (token != null && token.isPaintable()) {
-
-			fm = textArea.getFontMetricsForTokenType(token.getType());
-			if (fm == null) {
-				return rect; // Don't return null as things will error.
-			}
-			char[] text = token.text;
-			int start = token.textOffset;
-			int end = start + token.textCount;
-
-			// If this token contains the position for which to get the
-			// bounding box...
-			if (token.containsPosition(pos)) {
-
-				s.array = token.text;
-				s.offset = token.textOffset;
-				s.count = pos - token.getOffset();
-
-				// Must use this (actually fm.charWidth()), and not
-				// fm.charsWidth() for returned value to match up with where
-				// text is actually painted on OS X!
-				float w = Utilities.getTabbedTextWidth(s, fm, stableX, e,
-					token.getOffset());
-				SwingUtils.setX(rect, stableX + w);
-				end = token.documentToToken(pos);
-
-				if (text[end] == '\t') {
-					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, ' '));
-				}
-				else {
-					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, text[end]));
-				}
-
-				return rect;
-
-			}
-
-			// If this token does not contain the position for which to get
-			// the bounding box...
-			else {
-				s.array = token.text;
-				s.offset = token.textOffset;
-				s.count = token.textCount;
-				stableX += Utilities.getTabbedTextWidth(s, fm, stableX, e,
-						token.getOffset());
-			}
-
-			token = (TokenImpl)token.getNextToken();
-
-		}
-
-		// If we didn't find anything, we're at the end of the line. Return
-		// a width of 1 (so selection highlights don't extend way past line's
-		// text). A ConfigurableCaret will know to paint itself with a larger
-		// width.
-		SwingUtils.setX(rect, stableX);
-		SwingUtils.setWidth(rect, 1);
-		return rect;
-
+		TokenViewModelConverter converter = getTokenViewModelConverter(textArea, e);
+		return converter.listOffsetToView(this, e, pos, x0, rect);
 	}
-
 
 	/**
 	 * Makes this token start at the specified offset into the document.<p>
