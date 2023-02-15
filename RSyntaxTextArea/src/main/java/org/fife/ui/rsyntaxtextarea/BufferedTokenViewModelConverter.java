@@ -1,11 +1,7 @@
 package org.fife.ui.rsyntaxtextarea;
 
-import org.fife.util.SwingUtils;
-
 import javax.swing.text.TabExpander;
-import javax.swing.text.Utilities;
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 
 /**
  * An implementation that buffers consecutive text in "chunks" and postpones the computation as long as possible and
@@ -15,9 +11,16 @@ import java.awt.geom.Rectangle2D;
 public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConverter {
 
 	/**
+	 * Name of property to define size of chunks to improve performance.
+	 * <b>EXPERIMENTAL:</b> processing in chunks yields better performance on long strings (+50k), but
+	 * yields bad offsets if size is too small, or if running with fractionally scaled fonts on Windows.
+	 */
+	public static final String PROPERTY_CHUNK_SIZE = BufferedTokenViewModelConverter.class.getName()+".chunkSize";
+
+	/**
 	 * Max size of text strings to buffer when converting x coordinate to model offset.
 	 */
-	private final int listOffsetChunkSize = Integer.valueOf(System.getProperty("chunkSize", "50000"));
+	private final int listOffsetChunkSize = Integer.valueOf(System.getProperty(PROPERTY_CHUNK_SIZE, "-1"));
 	private FontMetrics fm;
 	private char currChar;
 
@@ -47,7 +50,7 @@ public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConve
 			// CHUNK LIMIT?
 			// (improves performance by reducing max length of string to measure width for)
 			else if (listOffsetChunkSize>0 && charCount>0 && charCount % listOffsetChunkSize == 0) {
-				// TODO calculation yields false offset if chunksize is too small
+				// TODO calculation yields false offset on long strings if chunksize is too small
 				int offset = processChunk("Chunksize", i);
 				if (offset != UNDEFINED) {
 					return offset;
@@ -69,57 +72,6 @@ public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConve
 			}
 		}
 		return UNDEFINED;
-	}
-
-	@Override
-	protected Rectangle2D tokenListOffsetToView() {
-
-		fm = textArea.getFontMetricsForTokenType(token.getType());
-		if (fm == null) {
-			return null;
-		}
-		char[] text = token.text;
-		int start = token.textOffset;
-		int end = start + token.textCount;
-
-		// If this token contains the position for which to get the
-		// bounding box...
-		if (token.containsPosition(pos)) {
-
-			s.array = token.text;
-			s.offset = token.textOffset;
-			s.count = pos - token.getOffset();
-
-			// Must use this (actually fm.charWidth()), and not
-			// fm.charsWidth() for returned value to match up with where
-			// text is actually painted on OS X!
-			float w = Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander,
-				token.getOffset());
-			SwingUtils.setX(rect, stableX + w);
-			end = token.documentToToken(pos);
-
-			if (text[end] == '\t') {
-				SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, ' '));
-			}
-			else {
-				SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, text[end]));
-			}
-
-			return rect;
-		}
-
-		// If this token does not contain the position for which to get
-		// the bounding box...
-		else {
-			s.array = token.text;
-			s.offset = token.textOffset;
-			s.count = token.textCount;
-			stableX += Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander,
-				token.getOffset());
-		}
-
-		// not found in this token
-		return null;
 	}
 
 	private int processChunk(String logMessage, int chunkEnd) {

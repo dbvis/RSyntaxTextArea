@@ -17,8 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 //import javax.swing.text.StyleConstants;
@@ -223,8 +221,10 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		mono.addItemListener(evt->fillFontCombo(fontCombo, mono.isSelected()));
 
 		JComboBox<Class> converterCombo = new JComboBox<>();
-		converterCombo.addItemListener(e -> System.setProperty("CONVERTER", ((Class) e.getItem()).getSimpleName()));
-		converterCombo.setRenderer((list, converter, index, isSelected, cellHasFocus) -> new JLabel(converter.getSimpleName()));
+		converterCombo.addItemListener(e ->
+			System.setProperty(TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, ((Class) e.getItem()).getName()));
+		converterCombo.setRenderer((list, converter, index, isSelected, cellHasFocus) ->
+			new JLabel(converter.getSimpleName()));
 		converterCombo.addItem(BufferedTokenViewModelConverter.class);
 		converterCombo.addItem(FixedWidthTokenViewModelConverter.class);
 		converterCombo.addItem(DefaultTokenViewModelConverter.class);
@@ -233,8 +233,11 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		JSpinner chunkSizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 200000, 1000));
 		chunkSizeSpinner.setValue(50000);
 		chunkSizeSpinner.setToolTipText("Chunksize for " + BufferedTokenViewModelConverter.class.getSimpleName());
-		chunkSizeSpinner.addChangeListener(e -> System.setProperty("chunkSize", ((JSpinner) e.getSource()).getValue().toString()));
-		converterCombo.addItemListener(e-> chunkSizeSpinner.setEnabled (e.getItem().equals(BufferedTokenViewModelConverter.class)));
+		chunkSizeSpinner.addChangeListener(e ->
+			System.setProperty(BufferedTokenViewModelConverter.PROPERTY_CHUNK_SIZE,
+				((JSpinner) e.getSource()).getValue().toString()));
+		converterCombo.addItemListener(e->
+			chunkSizeSpinner.setEnabled (e.getItem().equals(BufferedTokenViewModelConverter.class)));
 
 		panel.add(new JLabel("Tab Size:"));
 		panel.add(tabSize);

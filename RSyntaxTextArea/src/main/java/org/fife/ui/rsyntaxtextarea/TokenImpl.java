@@ -15,6 +15,8 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.geom.Rectangle2D;
 import javax.swing.text.*;
+import java.lang.reflect.Constructor;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -32,7 +34,8 @@ import java.util.logging.Logger;
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
 public class TokenImpl implements Token {
-//	private static final Logger LOG = Logger.getLogger(TokenImpl.class.getName());
+
+	private static final Logger LOG = Logger.getLogger(TokenImpl.class.getName());
 
 	/**
 	 * The text this token represents.  This is implemented as a segment so we
@@ -465,16 +468,32 @@ public class TokenImpl implements Token {
 	 * @return TokenViewModelConverter
 	 */
 	protected TokenViewModelConverter getTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
-		String converter = System.getProperty("CONVERTER");
+		String converterClassName = System.getProperty(
+			TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, BufferedTokenViewModelConverter.class.getName());
 
-		if (BufferedTokenViewModelConverter.class.getSimpleName().equals(converter)) {
+		// known implementers
+		if (BufferedTokenViewModelConverter.class.getName().equals(converterClassName)) {
 			return new BufferedTokenViewModelConverter(textArea, e);
 		}
-		if (FixedWidthTokenViewModelConverter.class.getSimpleName().equals(converter)) {
+		if (FixedWidthTokenViewModelConverter.class.getName().equals(converterClassName)) {
 			FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
 			return new FixedWidthTokenViewModelConverter(textArea, fm);
 		}
-		return new DefaultTokenViewModelConverter(textArea, e);
+		if (DefaultTokenViewModelConverter.class.getName().equals(converterClassName)) {
+			return new DefaultTokenViewModelConverter(textArea, e);
+		}
+
+		// unknown implementation
+		try {
+			Class<?> converterClass = Class.forName(converterClassName);
+			Constructor<?> constructor = converterClass.getConstructor(RSyntaxTextArea.class, TabExpander.class);
+			TokenViewModelConverter converter = (TokenViewModelConverter) constructor.newInstance(textArea, e);
+			return converter;
+		} catch (ReflectiveOperationException ex) {
+			LOG.log(Level.WARNING, String.format("Unable to instantiate converter '%s', proceeding with default (%s)",
+				converterClassName, DefaultTokenViewModelConverter.class.getName()), ex);
+			return new DefaultTokenViewModelConverter(textArea, e);
+		}
 	}
 
 	@Override

@@ -7,8 +7,17 @@ import javax.swing.text.TabExpander;
 import javax.swing.text.Utilities;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
+import java.util.logging.Logger;
 
+/**
+ * The default implementation, extracted from {@link TokenImpl}.
+ *
+ * @see TokenImpl#getListOffset(RSyntaxTextArea, TabExpander, float, float)
+ * @see TokenImpl#listOffsetToView(RSyntaxTextArea, TabExpander, int, float, Rectangle2D)
+ */
 public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
+	private static final Logger LOG = Logger.getLogger(DefaultTokenViewModelConverter.class.getName());
+
 	private final RSyntaxTextArea textArea;
 	private final TabExpander e;
 
@@ -54,7 +63,7 @@ public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 					boolean beforeMiddle = x - currX < nextX - x;
 					float finalCurrX = currX;
 					int result = beforeMiddle ? offset : offset + 1;
-					AbstractTokenViewModelConverter.fine(()->String.format("x=%.3f | currX=%.3f => offset=%,d", x, finalCurrX, result));
+					LOG.fine(()->String.format("x=%.3f | currX=%.3f => offset=%,d", x, finalCurrX, result));
 					return result;
 				}
 			}
@@ -134,7 +143,6 @@ public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 		SwingUtils.setX(rect, stableX);
 		SwingUtils.setWidth(rect, 1);
 		return rect;
-
 	}
 
 }

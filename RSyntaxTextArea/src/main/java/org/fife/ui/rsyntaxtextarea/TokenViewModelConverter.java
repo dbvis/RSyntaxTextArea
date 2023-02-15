@@ -5,6 +5,15 @@ import java.awt.geom.Rectangle2D;
 
 public interface TokenViewModelConverter {
 	/**
+	 * Option to define an implementation of {@link TokenViewModelConverter} by means of a JVM property.
+	 * The class must implement a constructor that accepts a {@link RSyntaxTextArea} and a {@link TabExpander}
+	 * as arguments.
+	 *
+	 * @see TokenImpl#getTokenViewModelConverter(RSyntaxTextArea, TabExpander)
+	 */
+	String PROPERTY_CONVERTER_CLASS = "org.fife.ui.rsyntaxtextarea.TokenViewModelConverter";
+
+	/**
 	 * Get the offset for the character in the document that maps to the specified x coordinate.
 	 * Subclasses are expected to implement the behavior in the best and fastest way according to the context
 	 * (typically the type of font or fonts used).

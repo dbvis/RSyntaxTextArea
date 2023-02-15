@@ -4,10 +4,12 @@ import org.fife.util.SwingUtils;
 
 import javax.swing.text.Segment;
 import javax.swing.text.TabExpander;
+import javax.swing.text.Utilities;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
-import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * An abstraction of features for converting x-coordinates in the view to the corresponding offset in the text model,
@@ -18,9 +20,7 @@ import java.util.function.Supplier;
  * as fields. The instance must not be kept and reused, but should be instantiated on each invocation.
  */
 public abstract class AbstractTokenViewModelConverter implements TokenViewModelConverter {
-	// TODO figure out how to control the logging using JVM params in IntelliJ launcher
-	//	private static final Logger LOG = Logger.getLogger(AbstractTokenViewModelConverter.class.getName());
-	private static final String DEBUG = System.getProperty("DEBUG", "INFO");
+	private static final Logger LOG = Logger.getLogger(AbstractTokenViewModelConverter.class.getName());
 
 	protected static final int UNDEFINED = -1; // undefined offset
 
@@ -43,7 +43,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 	// model to view (listOffsetToView())
 	protected int pos;			// the model offset
-	protected Segment s;	//
 	protected Rectangle2D rect;	// for returning results (reused to minimize memory allocations)
 
 	protected AbstractTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
@@ -81,7 +80,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		}
 
 		// If we didn't find anything, return the end position of the text.
-		fine(()->"EOL");
+		LOG.fine(()->"EOL");
 		return last;
 	}
 
@@ -92,7 +91,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		this.token = mainToken;
 		this.stableX = x0; // Cached ending x-coord. of last tab or token.
 		this.pos = pos;
-		this.s = new Segment();
 		this.rect = originalRectangle;
 
 		// loop over tokens
@@ -114,7 +112,71 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		return rect;
 	}
 
-	protected abstract Rectangle2D tokenListOffsetToView();
+	/**
+	 * Place-holder to let subclasses override as necessary.
+	 * The default implementation is identical to the default implementation in {@link DefaultTokenViewModelConverter}.
+	 *
+	 * @return The position (in the document, NOT into the token list!) that covers the pixel location.
+	 * @see DefaultTokenViewModelConverter#listOffsetToView(TokenImpl, TabExpander, int, float, Rectangle2D)
+	 */
+	protected Rectangle2D tokenListOffsetToView() {
+		Segment s = new Segment();
+
+		while (token != null && token.isPaintable()) {
+
+			FontMetrics fm = textArea.getFontMetricsForTokenType(token.getType());
+			if (fm == null) {
+				return rect; // Don't return null as things will error.
+			}
+			char[] text = token.text;
+			int start = token.textOffset;
+			int end = start + token.textCount;
+
+			// If this token contains the position for which to get the bounding box...
+			if (token.containsPosition(pos)) {
+
+				s.array = token.text;
+				s.offset = token.textOffset;
+				s.count = pos - token.getOffset();
+
+				// Must use this (actually fm.charWidth()), and not
+				// fm.charsWidth() for returned value to match up with where
+				// text is actually painted on OS X!
+				float w = Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander, token.getOffset());
+				SwingUtils.setX(rect, stableX + w);
+				end = token.documentToToken(pos);
+
+				if (text[end] == '\t') {
+					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, ' '));
+				}
+				else {
+					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, text[end]));
+				}
+
+				return rect;
+
+			}
+
+			// If this token does not contain the position for which to get the bounding box...
+			else {
+				s.array = token.text;
+				s.offset = token.textOffset;
+				s.count = token.textCount;
+				stableX += Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander,
+					token.getOffset());
+			}
+
+			token = (TokenImpl)token.getNextToken();
+
+		}
+
+		// If we didn't find anything, we're at the end of the line.
+		// Return a width of 1 (so selection highlights don't extend way past line's text).
+		// A ConfigurableCaret will know to paint itself with a larger width.
+		SwingUtils.setX(rect, stableX);
+		SwingUtils.setWidth(rect, 1);
+		return rect;
+	}
 
 	/**
 	 * Determines the offset into the supplied text block that covers pixel location <code>x</code> using a faster
@@ -139,7 +201,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 		// found exact position?
 		if (len<2) {
-			finest(()-> String.format("Found: x=%,.3f => offset=%,d ('%s')", x, off, chars[off]));
+			LOG.finest(()-> String.format("Found: x=%,.3f => offset=%,d ('%s')", x, off, chars[off]));
 			return off;
 		}
 
@@ -149,18 +211,18 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		int halfLen = len / 2; // split the current segment in two
 		int zeroToHalfLen = off + halfLen - off0; // length from start of text to half of current segment
 		float xMid = x0 + charsWidth(fm, chars, off0, zeroToHalfLen);
-		finest(() -> debugListOffsetRecursiveEntry(chars, off, len, x0, x, halfLen, zeroToHalfLen, xMid));
+		LOG.finest(() -> debugListOffsetRecursiveEntry(chars, off, len, x0, x, halfLen, zeroToHalfLen, xMid));
 
 		// search first half?
 		if (x < xMid) {
-			finest(() -> debugListOffsetRecursiveCall(chars, "FIRST half", off, off + halfLen - 1, halfLen));
+			LOG.finest(() -> debugListOffsetRecursiveCall(chars, "FIRST half", off, off + halfLen - 1, halfLen));
 			return getListOffset(fm, chars, off0, off, halfLen, x0, x);
 		}
 
 		// search second half
 		int nextOff = off + halfLen;
 		int nextLen = len - halfLen;
-		finest(() -> debugListOffsetRecursiveCall(chars, "SECOND half", nextOff, nextOff + nextLen - 1, nextLen));
+		LOG.finest(() -> debugListOffsetRecursiveCall(chars, "SECOND half", nextOff, nextOff + nextLen - 1, nextLen));
 		return getListOffset(fm,  chars, off0, nextOff, nextLen, x0, x);
 	}
 
@@ -221,21 +283,21 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 				return (int)c>255;
 
 			default:
-				finest(()->String.format("'%c' wide (%s), value=%,d%n", c, script, (int)c));
+				LOG.finest(()->String.format("'%c' wide (%s), value=%,d%n", c, script, (int)c));
 				return true;
 		}
 	}
 
 	protected void logConversion(char foundInCharacter, int resultingOffset) {
 		String escaped = foundInCharacter=='\t' ? "\\t" : String.valueOf(foundInCharacter);
-		fine(() -> String.format("[%,d ms] x=%.0f found in character '%s' => offset=%,d",
+		LOG.fine(() -> String.format("[%,d ms] x=%.0f found in character '%s' => offset=%,d",
 			System.currentTimeMillis() - started, x, escaped, resultingOffset));
 	}
 
 
 	protected void logConversion(String info, int offsetInChunk, int offsetInToken, int offsetInDocument) {
-
-		if (isFine()) {
+		Level level = Level.FINE;
+		if (LOG.isLoggable(level)) {
 			long elapsed = System.currentTimeMillis() - started;
 
 			String docText = textArea.getText();
@@ -250,29 +312,8 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 					"offsetInChunk=%,d | offsetInToken=%,d => offsetInDocument=%,d ('%s')",
 				elapsed, info, length, tokenString, token.getOffset(), token.textCount, x,
 				offsetInChunk, offsetInToken, offsetInDocument, docCharacter);
-			fine(() -> logMessage);
+			LOG.log(level, logMessage);
 		}
-	}
-
-	// TODO figure out how to control the logging using JVM params and config file in IntelliJ launcher
-	protected static void fine(Supplier<String> msg) {
-		if (isFine()) {
-			System.err.println(msg.get());
-		}
-	}
-
-	protected static void finest(Supplier<String> msg) {
-		if (isFinest()) {
-			System.err.println(msg.get());
-		}
-	}
-
-	private static boolean isFine() {
-		return DEBUG.equalsIgnoreCase("fine");
-	}
-
-	private static boolean isFinest() {
-		return DEBUG.toLowerCase().startsWith("fine");
 	}
 
 }
