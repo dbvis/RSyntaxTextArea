@@ -1,10 +1,14 @@
+/*
+ * 02/15/23
+ *
+ * FixedWidthTokenViewModelConverter.java - improves performance on monospace fonts
+ *
+ * This library is distributed under a modified BSD license.  See the included
+ * LICENSE file for details.
+ */
 package org.fife.ui.rsyntaxtextarea;
 
-import org.fife.util.SwingUtils;
-
-import javax.swing.text.Utilities;
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 
 /**
  * An implementation that buffers consecutive text and postpones the computation as long as possible and then
@@ -127,6 +131,7 @@ public class FixedWidthTokenViewModelConverter extends AbstractTokenViewModelCon
 
 	/**
 	 * Check the text chunk since last breakpoint. If x is inside chunk, return the offset, else {@link #UNDEFINED}.
+	 *
 	 * @param debugInfo for the log
 	 * @param chunkEnd	where in the text array the text chunk ends (exclusive)
 	 * @return offset or {@link #UNDEFINED}

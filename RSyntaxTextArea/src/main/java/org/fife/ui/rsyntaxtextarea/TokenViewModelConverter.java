@@ -1,8 +1,22 @@
+/*
+ * 02/15/23
+ *
+ * TokenViewModelConverter.java - extracted from TokenImpl for flexibility.
+ *
+ * This library is distributed under a modified BSD license.  See the included
+ * LICENSE file for details.
+ */
+
 package org.fife.ui.rsyntaxtextarea;
 
 import javax.swing.text.TabExpander;
 import java.awt.geom.Rectangle2D;
 
+/**
+ * Defines a protocol to allow different implementations for use by
+ * {@link TokenImpl#getListOffset(RSyntaxTextArea, TabExpander, float, float)} and
+ * {@link TokenImpl#listOffsetToView(RSyntaxTextArea, TabExpander, int, float, Rectangle2D)}.
+ */
 public interface TokenViewModelConverter {
 	/**
 	 * Option to define an implementation of {@link TokenViewModelConverter} by means of a JVM property.

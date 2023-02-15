@@ -1,3 +1,11 @@
+/*
+ * 02/15/23
+ *
+ * AbstractTokenViewModelConverter.java - Base class for TokenViewModelConverter implementations.
+ *
+ * This library is distributed under a modified BSD license.  See the included
+ * LICENSE file for details.
+ */
 package org.fife.ui.rsyntaxtextarea;
 
 import org.fife.util.SwingUtils;
@@ -16,8 +24,9 @@ import java.util.logging.Logger;
  * extracted from {@link TokenImpl#getListOffset(RSyntaxTextArea, TabExpander, float, float)} to separate concerns.
  * The main design objective is to improve performance when converting very long (+100k) strings.
  * <p/>
- * @implNote this class is <b>not</b> thread-safe; {@link #getListOffset(TokenImpl, float, float)} stores loop variables
- * as fields. The instance must not be kept and reused, but should be instantiated on each invocation.
+ * <b>Implementation note</b><br/>
+ * This class is <b>not</b> thread-safe; the methods store loop variables as fields.
+ * The instance must not be kept and reused, but should be instantiated on each invocation.
  */
 public abstract class AbstractTokenViewModelConverter implements TokenViewModelConverter {
 	private static final Logger LOG = Logger.getLogger(AbstractTokenViewModelConverter.class.getName());
@@ -87,11 +96,11 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	protected abstract int getTokenListOffset();
 
 	@Override
-	public Rectangle2D listOffsetToView(TokenImpl mainToken, TabExpander e, int pos, float x0, Rectangle2D originalRectangle) {
+	public Rectangle2D listOffsetToView(TokenImpl mainToken, TabExpander e, int pos, float x0, Rectangle2D rectangle) {
 		this.token = mainToken;
 		this.stableX = x0; // Cached ending x-coord. of last tab or token.
 		this.pos = pos;
-		this.rect = originalRectangle;
+		this.rect = rectangle;
 
 		// loop over tokens
 		started = System.currentTimeMillis();
@@ -302,9 +311,8 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 			String docText = textArea.getText();
 			int length = docText.length();
-			String docCharacter = offsetInDocument < length
-				? docText.substring(offsetInDocument, offsetInDocument + 1)
-				: null;
+			boolean valid = offsetInDocument < length;
+			String docCharacter = valid ? docText.substring(offsetInDocument, offsetInDocument + 1) : null;
 			String tokenString = token.textCount<10 ? token.getLexeme() : token.getLexeme().substring(0, 10)+"...";
 
 			String logMessage = String.format(

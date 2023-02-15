@@ -462,7 +462,8 @@ public class TokenImpl implements Token {
 	}
 
 	/**
-	 * Get the appropriate implementation of {@link TokenViewModelConverter}
+	 * Get the appropriate implementation of {@link TokenViewModelConverter}.
+	 *
 	 * @param textArea The text area from which the token list was derived.
 	 * @param e How to expand tabs.
 	 * @return TokenViewModelConverter

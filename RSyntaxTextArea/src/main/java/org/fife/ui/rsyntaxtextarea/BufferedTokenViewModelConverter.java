@@ -1,3 +1,11 @@
+/*
+ * 02/15/23
+ *
+ * BufferedTokenViewModelConverter.java - improves performance
+ *
+ * This library is distributed under a modified BSD license.  See the included
+ * LICENSE file for details.
+ */
 package org.fife.ui.rsyntaxtextarea;
 
 import javax.swing.text.TabExpander;
