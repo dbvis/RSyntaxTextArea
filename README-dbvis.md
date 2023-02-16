@@ -46,7 +46,12 @@ We made several experiments to improve performance:
 * **ViewPort**  
   An "ideal" solution would probably be to maintain a viewport where the conversion operates only on the visible part of the text; 
   if the converter knew the x offset and the model offset of the first and last visible characters on screen, the calculations would only need to consider the visible part of the screen.  
-  This way, the performance would not be affected by the string size.  Alas, this does not seem trivial to implement without significant changes to the current design of ``TokenImpl`` and its role in the rendering and painting.       
+  This way, the performance would not be affected by the string size. Alas, this does not seem trivial to implement without significant changes to the current design of ``TokenImpl`` and its role in the rendering and painting?         
+  Or is it possible to achieve this by inspecting the existing properties of the RSyntaxTextArea, which is passed as an argument to the methods?  
+  ``textArea.getLineStartOffsetOfCurrentLine();``  
+  ``textArea.getLineEndOffsetOfCurrentLine();``  
+  ``textArea.getMarginLinePixelLocation();``  
+  ``textArea.getMarginLinePixelLocation();``
 
 ### Cursor Keys
 
