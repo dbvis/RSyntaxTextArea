@@ -57,14 +57,14 @@ public final class SwingUtils {
 
 	/**
 	 * Check the intrinsic details of <code>SwingUtilities2.drawString(...)</code>,
-	 * <code>SwingUtilities2.stringWidth(...)</code>, and <code>FontUtils.isComplexText(...)</code>.
+	 * <code>SwingUtilities2.stringWidth(...)</code>, and <code>FontUtilities.isComplexText(...)</code>.
 	 *
 	 * @param chars the text to analyze
 	 * @param beginIndex where to start
 	 * @param length the number of characters to check
 	 */
 	static boolean needsTextLayout(char[] chars, int beginIndex, int length) {
-		return length > TEXT_LAYOUT_THRESHOLD || Font.textRequiresLayout(chars, beginIndex, beginIndex + length) ;
+		return length > TEXT_LAYOUT_THRESHOLD || Font.textRequiresLayout(chars, beginIndex, beginIndex + length);
 	}
 
 	/**
