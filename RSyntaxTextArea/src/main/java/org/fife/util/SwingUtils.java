@@ -19,6 +19,19 @@ import java.awt.geom.Rectangle2D;
  * Compare to deprecated <code>javax.swing.SwingUtilities2</code>.
  */
 public final class SwingUtils {
+
+	/**
+	 * The length of the text that requires {@link TextLayout} to paint properly.
+	 * The default is just a guess based on visual observations when running fractionally scaled fonts on Windows.
+	 * It certainly breaks at 70k.
+	 * <p/>
+	 * Example: <code>-Dorg.fife.util.SwingUtils.textLayoutThreshold=10000</code>
+	 *
+	 * @see #needsTextLayout(char[], int, int)
+	 */
+	public static final int TEXT_LAYOUT_THRESHOLD =
+		Integer.valueOf(System.getProperty(SwingUtils.class.getName()+".textLayoutThreshold", "1000"));
+
 	private SwingUtils() {
 	}
 
@@ -50,11 +63,8 @@ public final class SwingUtils {
 	 * @param beginIndex where to start
 	 * @param length the number of characters to check
 	 */
-	private static boolean needsTextLayout(char[] chars, int beginIndex, int length) {
-		// this is just a guess based on visual observations when running fractionally scaled fonts on Windows
-		// it certainly breaks at 70k
-		int criticalLength = 1000;
-		return length > criticalLength || Font.textRequiresLayout(chars, beginIndex, beginIndex + length) ;
+	static boolean needsTextLayout(char[] chars, int beginIndex, int length) {
+		return length > TEXT_LAYOUT_THRESHOLD || Font.textRequiresLayout(chars, beginIndex, beginIndex + length) ;
 	}
 
 	/**
