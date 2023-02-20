@@ -4,28 +4,26 @@
  */
 package org.fife.ui.rsyntaxtextarea.demo;
 
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
-
-import javax.swing.*;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
-//import javax.swing.text.StyleConstants;
-
 import org.fife.ui.rsyntaxtextarea.*;
 import org.fife.ui.rtextarea.FoldIndicatorStyle;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.util.SwingUtils;
+
+import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Locale;
 
 
 /**
@@ -129,6 +127,9 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		addSyntaxItem("TypeScript", "TypeScriptExample.txt", SYNTAX_STYLE_TYPESCRIPT, bg, menu);
 		addSyntaxItem("XML",  "XMLExample.txt", SYNTAX_STYLE_XML, bg, menu);
 		addSyntaxItem("YAML", "YamlExample.txt", SYNTAX_STYLE_YAML, bg, menu);
+		menu.addSeparator();
+		menu.add(new JMenuItem(new FileOpenAction()));
+
 		mb.add(menu);
 
 		menu = new JMenu("View");
@@ -193,8 +194,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		mb.add(menu);
 
 		menu = new JMenu("Help");
-		JMenuItem item = new JMenuItem(new AboutAction());
-		menu.add(item);
+		menu.add(new JMenuItem(new AboutAction()));
 		mb.add(menu);
 
 		return mb;
@@ -220,9 +220,9 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		fillFontCombo(fontCombo, mono.isSelected());
 		mono.addItemListener(evt->fillFontCombo(fontCombo, mono.isSelected()));
 
-		JComboBox<Class> converterCombo = new JComboBox<>();
+		JComboBox<Class<?>> converterCombo = new JComboBox<>();
 		converterCombo.addItemListener(e ->
-			System.setProperty(TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, ((Class) e.getItem()).getName()));
+			System.setProperty(TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, ((Class<?>) e.getItem()).getName()));
 		converterCombo.setRenderer((list, converter, index, isSelected, cellHasFocus) ->
 			new JLabel(converter.getSimpleName()));
 		converterCombo.addItem(BufferedTokenViewModelConverter.class);
@@ -651,4 +651,29 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 	}
 
+	private class FileOpenAction extends AbstractAction {
+		public FileOpenAction() {
+				putValue(NAME, "Open File ...");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			JFileChooser chooser = new JFileChooser();
+			int result = chooser.showOpenDialog(DemoRootPane.this);
+			if (result == JFileChooser.APPROVE_OPTION) {
+				File file = chooser.getSelectedFile();
+				if (file != null) {
+					Path path = file.toPath();
+					if (Files.isRegularFile(path)) {
+						try {
+							textArea.setText(Files.readString(path, StandardCharsets.UTF_8));
+						} catch (IOException e1) {
+							textArea.setText(String.format("Unable to read file: %s%n%s", file, e1));
+						}
+					}
+				}
+			}
+		}
+
+	}
 }
