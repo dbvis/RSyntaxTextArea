@@ -480,6 +480,9 @@ public class TokenImpl implements Token {
 			FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
 			return new FixedWidthTokenViewModelConverter(textArea, fm);
 		}
+		if (SectionedTokenViewModelConverter.class.getName().equals(converterClassName)) {
+			return new SectionedTokenViewModelConverter(textArea, e);
+		}
 		if (DefaultTokenViewModelConverter.class.getName().equals(converterClassName)) {
 			return new DefaultTokenViewModelConverter(textArea, e);
 		}

@@ -227,6 +227,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 			new JLabel(converter.getSimpleName()));
 		converterCombo.addItem(BufferedTokenViewModelConverter.class);
 		converterCombo.addItem(FixedWidthTokenViewModelConverter.class);
+		converterCombo.addItem(SectionedTokenViewModelConverter.class);
 		converterCombo.addItem(DefaultTokenViewModelConverter.class);
 		converterCombo.setSelectedIndex(0);
 
