@@ -95,14 +95,14 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		return last;
 	}
 
-	private String dumpTokens(TokenImpl tokenList) {
+	protected String dumpTokens(TokenImpl tokenList) {
 		int maxLength = 0;
 		Token longestToken = null;
 		int count=0;
 		StringJoiner sj = new StringJoiner("\n", tokenList +"\n", "");
 
 		for (Token t = tokenList; t != null && t.isPaintable(); t = t.getNextToken()) {
-			int length = t.getEndOffset()-t.getOffset();
+			int length = t.length();
 			if (length>maxLength) {
 				maxLength = length;
 				longestToken = t;
