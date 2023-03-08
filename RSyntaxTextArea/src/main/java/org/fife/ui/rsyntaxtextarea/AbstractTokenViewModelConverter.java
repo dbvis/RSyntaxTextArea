@@ -125,8 +125,9 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 * Place-holder to let subclasses override as necessary.
 	 * The default implementation is identical to the default implementation in {@link DefaultTokenViewModelConverter}.
 	 *
-	 * @return The position (in the document, NOT into the token list!) that covers the pixel location.
+	 * @return The bounding box for the specified position in the model.
 	 * @see DefaultTokenViewModelConverter#listOffsetToView(TokenImpl, TabExpander, int, float, Rectangle2D)
+	 * @see TokenViewModelConverter#listOffsetToView(TokenImpl, TabExpander, int, float, Rectangle2D)
 	 */
 	protected Rectangle2D tokenListOffsetToView() {
 		Segment s = new Segment();
