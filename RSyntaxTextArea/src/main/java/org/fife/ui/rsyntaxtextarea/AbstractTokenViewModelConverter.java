@@ -16,6 +16,7 @@ import javax.swing.text.Utilities;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
+import java.util.StringJoiner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,6 +70,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		last = token.getOffset();
 
 		// loop over tokens
+		LOG.finest(()->dumpTokens(tokenList));
 		started = System.currentTimeMillis();
 		while (token != null && token.isPaintable()) {
 
@@ -91,6 +93,29 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		// If we didn't find anything, return the end position of the text.
 		LOG.fine(()->"EOL");
 		return last;
+	}
+
+	private String dumpTokens(TokenImpl tokenList) {
+		int maxLength = 0;
+		Token longestToken = null;
+		int count=0;
+		StringJoiner sj = new StringJoiner("\n", tokenList +"\n", "");
+
+		for (Token t = tokenList; t != null && t.isPaintable(); t = t.getNextToken()) {
+			int length = t.getEndOffset()-t.getOffset();
+			if (length>maxLength) {
+				maxLength = length;
+				longestToken = t;
+			}
+			int first = t.getOffset();
+			int last = t.getEndOffset()-1;
+			String lexeme = length < 10 ? t.getLexeme() : t.getLexeme().substring(0, 4) + "..." + t.getLexeme().substring(length-4);
+			lexeme = lexeme==null ? null : lexeme.replace("\t", "\\t");
+			sj.add(String.format("Token%,4d: %,6d -> %,6d | %,d chars [%s]", count++, first, last, length, lexeme));
+		}
+
+		sj.add(String.format("%,d tokens: Longest is %,d characters: %s", count, maxLength, longestToken));
+		return sj.toString();
 	}
 
 	protected abstract int getTokenListOffset();
@@ -247,7 +272,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	}
 
 	private static double doubleCharsWidth(FontMetrics fm, char[] chars, int begin, int count) {
-
 		FontRenderContext frc = fm.getFontRenderContext();
 		Font font = fm.getFont();
 		int limit = begin + count;
