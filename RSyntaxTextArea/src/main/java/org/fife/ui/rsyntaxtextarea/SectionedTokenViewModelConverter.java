@@ -67,7 +67,7 @@ public class SectionedTokenViewModelConverter extends BufferedTokenViewModelConv
 					current = (TokenImpl) nextToken.getLastPaintableToken();
 				} else {
 					current.setNextToken(nextToken);
-					current = nextToken;
+					current = (TokenImpl) nextToken.getLastPaintableToken();
 				}
 
 
@@ -76,7 +76,25 @@ public class SectionedTokenViewModelConverter extends BufferedTokenViewModelConv
 				return tokenList;
 			}
 		}
+		assert assertConsecutiveTokens(all);
 		return all;
+	}
+
+	private boolean assertConsecutiveTokens(TokenImpl tokens) {
+		int lastEndOffset = tokens.getEndOffset();
+		int i = 0;
+		for (Token t = tokens.getNextToken(); t != null && t.getType()!=TokenTypes.NULL; t = t.getNextToken(), i++) {
+			int textCount = ((TokenImpl) t).textCount;
+			assert t.getOffset() == lastEndOffset : assertionMessage(tokens, lastEndOffset, i, t, textCount);
+			assert t.getEndOffset()- textCount == t.getOffset() : assertionMessage(tokens, lastEndOffset, i, t, textCount);
+			lastEndOffset = t.getEndOffset();
+		}
+		return true;
+	}
+
+	private String assertionMessage(TokenImpl tokens, int last, int i, Token t, int textCount) {
+		return String.format("token#%d | last=%d | offset=%d, endOffset=%d, textCount=%d | All tokens:%n%s",
+			i, last, t.getOffset(), t.getEndOffset(), textCount, dumpTokens(tokens));
 	}
 
 	private TokenImpl nextToken(TokenImpl t) {

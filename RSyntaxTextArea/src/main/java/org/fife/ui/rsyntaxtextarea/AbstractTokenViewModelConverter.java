@@ -114,7 +114,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 			sj.add(String.format("Token%,4d: %,6d -> %,6d | %,d chars [%s]", count++, first, last, length, lexeme));
 		}
 
-		sj.add(String.format("%,d tokens: Longest is %,d characters: %s", count, maxLength, longestToken));
+		sj.add(String.format("%,d tokens%nLongest token is %,d characters:%n%s", count, maxLength, longestToken));
 		return sj.toString();
 	}
 
