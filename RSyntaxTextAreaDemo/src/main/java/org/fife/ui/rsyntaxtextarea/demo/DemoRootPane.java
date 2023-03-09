@@ -19,11 +19,11 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.*;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.Objects;
 
 
 /**
@@ -232,14 +232,11 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		converterCombo.addItem(DefaultTokenViewModelConverter.class);
 		converterCombo.setSelectedIndex(0);
 
-		JSpinner chunkSizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 200000, 1000));
-		chunkSizeSpinner.setValue(50000);
-		chunkSizeSpinner.setToolTipText("Chunksize for " + BufferedTokenViewModelConverter.class.getSimpleName());
-		chunkSizeSpinner.addChangeListener(e ->
-			System.setProperty(BufferedTokenViewModelConverter.PROPERTY_CHUNK_SIZE,
-				((JSpinner) e.getSource()).getValue().toString()));
-		converterCombo.addItemListener(e->
-			chunkSizeSpinner.setEnabled(e.getItem().equals(BufferedTokenViewModelConverter.class)));
+		JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 200000, 1000));
+		sizeSpinner.setValue(50000);
+		sizeSpinner.setToolTipText("Size for selected converter (if applicable)");
+		sizeSpinner.addChangeListener(e -> setConverterSize((Class<? extends TokenViewModelConverter>)converterCombo.getSelectedItem(), (Integer) sizeSpinner.getValue()));
+		converterCombo.addItemListener(e-> setSizeSpinnerEnabledState(sizeSpinner, (Class) e.getItem()));
 
 		panel.add(new JLabel("Tab Size:"));
 		panel.add(tabSize);
@@ -247,9 +244,25 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		panel.add(fontCombo);
 		panel.add(fontSize);
 		panel.add(converterCombo);
-		panel.add(chunkSizeSpinner);
+		panel.add(sizeSpinner);
 
 		return panel;
+	}
+
+	private static void setSizeSpinnerEnabledState(JSpinner chunkSizeSpinner, Class e) {
+		boolean enabled = Objects.equals(e, BufferedTokenViewModelConverter.class) || Objects.equals(e, SectionedTokenViewModelConverter.class);
+		chunkSizeSpinner.setEnabled(enabled);
+	}
+
+	private static void setConverterSize(Class<? extends TokenViewModelConverter> converter, int value) {
+		String size = String.valueOf(value);
+		if (Objects.equals(converter, BufferedTokenViewModelConverter.class)) {
+			System.setProperty(BufferedTokenViewModelConverter.PROPERTY_CHUNK_SIZE, size);
+		} else if (Objects.equals(converter, SectionedTokenViewModelConverter.class)) {
+			System.setProperty(SectionedTokenViewModelConverter.PROPERTY_SECTION_SIZE, size);
+		} else {
+			throw new IllegalArgumentException("Unexpected class: " + converter);
+		}
 	}
 
 	private Font deriveFont(Font item, JSpinner fontSize) {
