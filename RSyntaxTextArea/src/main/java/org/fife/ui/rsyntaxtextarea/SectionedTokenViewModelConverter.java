@@ -110,6 +110,7 @@ public class SectionedTokenViewModelConverter extends BufferedTokenViewModelConv
 		for (int s = sectionSize; s < t.textCount; s += sectionSize) {
 			TokenImpl next = newToken(t);
 			next.makeStartAt(current.getOffset() + sectionSize);
+			current.textCount = Math.min(current.textCount, sectionSize);
 			current.setNextToken(next);
 			current = next;
 		}
