@@ -22,8 +22,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.logging.*;
 
 
 /**
@@ -230,13 +232,23 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		converterCombo.addItem(FixedWidthTokenViewModelConverter.class);
 		converterCombo.addItem(SectionedTokenViewModelConverter.class);
 		converterCombo.addItem(DefaultTokenViewModelConverter.class);
-		converterCombo.setSelectedIndex(0);
+		converterCombo.setSelectedIndex(2);
 
 		JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 200000, 1000));
 		sizeSpinner.setValue(50000);
 		sizeSpinner.setToolTipText("Size for selected converter (if applicable)");
 		sizeSpinner.addChangeListener(e -> setConverterSize((Class<? extends TokenViewModelConverter>)converterCombo.getSelectedItem(), (Integer) sizeSpinner.getValue()));
 		converterCombo.addItemListener(e-> setSizeSpinnerEnabledState(sizeSpinner, (Class) e.getItem()));
+
+		JComboBox<Level> logCombo = new JComboBox<>();
+		logCombo.addItem(Level.SEVERE);
+		logCombo.addItem(Level.WARNING);
+		logCombo.addItem(Level.INFO);
+		logCombo.addItem(Level.FINE);
+		logCombo.addItem(Level.FINER);
+		logCombo.addItem(Level.FINEST);
+		logCombo.addItemListener(e -> setLogLevel((Level) e.getItem()));
+		logCombo.setSelectedIndex(2);
 
 		panel.add(new JLabel("Tab Size:"));
 		panel.add(tabSize);
@@ -245,8 +257,26 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		panel.add(fontSize);
 		panel.add(converterCombo);
 		panel.add(sizeSpinner);
+		panel.add(new JLabel("Logging:"));
+		panel.add(logCombo);
 
 		return panel;
+	}
+
+	private void setLogLevel(Level level) {
+		LogManager lm = LogManager.getLogManager();
+		Logger rootLogger = lm.getLogger("");
+		for (Handler h: rootLogger.getHandlers()) {
+			h.setLevel(level);
+		}
+
+		Enumeration<String> loggerNames = lm.getLoggerNames();
+		while (loggerNames.hasMoreElements()) {
+			String name = loggerNames.nextElement();
+			if (name.startsWith("org.fife.ui.rsyntaxtextarea.")) {
+				lm.getLogger(name).setLevel(level);
+			}
+		}
 	}
 
 	private static void setSizeSpinnerEnabledState(JSpinner chunkSizeSpinner, Class e) {

@@ -32,7 +32,6 @@ public final class RSyntaxTextAreaDemoApp extends JFrame {
 			Toolkit.getDefaultToolkit().setDynamicLayout(true);
 			RSyntaxTextAreaDemoApp app = new RSyntaxTextAreaDemoApp();
 			app.setLocationRelativeTo(null);
-			app.setSize(new Dimension(1200, 800));
 			app.setVisible(true);
 		});
 	}
