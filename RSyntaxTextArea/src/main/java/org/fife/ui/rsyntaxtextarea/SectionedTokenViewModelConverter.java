@@ -85,16 +85,12 @@ public class SectionedTokenViewModelConverter extends BufferedTokenViewModelConv
 		int i = 0;
 		for (Token t = tokens.getNextToken(); t != null && t.getType()!=TokenTypes.NULL; t = t.getNextToken(), i++) {
 			int textCount = ((TokenImpl) t).textCount;
-			assert t.getOffset() == lastEndOffset : assertionMessage(tokens, lastEndOffset, i, t, textCount);
-			assert t.getEndOffset()- textCount == t.getOffset() : assertionMessage(tokens, lastEndOffset, i, t, textCount);
+			assert t.getOffset()==lastEndOffset && t.getOffset()==t.getEndOffset()-textCount
+				: String.format("token#%d | last=%d | offset=%d, endOffset=%d, textCount=%d | All tokens:%n%s",
+					i, lastEndOffset, t.getOffset(), t.getEndOffset(), textCount, dumpTokens(tokens));
 			lastEndOffset = t.getEndOffset();
 		}
 		return true;
-	}
-
-	private String assertionMessage(TokenImpl tokens, int last, int i, Token t, int textCount) {
-		return String.format("token#%d | last=%d | offset=%d, endOffset=%d, textCount=%d | All tokens:%n%s",
-			i, last, t.getOffset(), t.getEndOffset(), textCount, dumpTokens(tokens));
 	}
 
 	private TokenImpl nextToken(TokenImpl t) {
