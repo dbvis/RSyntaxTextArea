@@ -177,15 +177,15 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 				// Must use this (actually fm.charWidth()), and not
 				// fm.charsWidth() for returned value to match up with where
 				// text is actually painted on OS X!
-				float w = Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander, token.getOffset());
+				float w = getTabbedTextWidth(s, fm);
 				SwingUtils.setX(rect, stableX + w);
 				end = token.documentToToken(pos);
 
 				if (text[end] == '\t') {
-					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, ' '));
+					SwingUtils.setWidth(rect, charWidth(fm, ' '));
 				}
 				else {
-					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, text[end]));
+					SwingUtils.setWidth(rect, charWidth(fm, text[end]));
 				}
 
 				return rect;
@@ -197,8 +197,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 				s.array = token.text;
 				s.offset = token.textOffset;
 				s.count = token.textCount;
-				stableX += Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander,
-					token.getOffset());
+				stableX += getTabbedTextWidth(s, fm);
 			}
 
 			token = (TokenImpl)token.getNextToken();
@@ -211,6 +210,10 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		SwingUtils.setX(rect, stableX);
 		SwingUtils.setWidth(rect, 1);
 		return rect;
+	}
+
+	protected float getTabbedTextWidth(Segment s, FontMetrics fm) {
+		return Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander, token.getOffset());
 	}
 
 	/**
@@ -230,7 +233,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 * @param x     The pixel-position for which you want to get the corresponding offset.
 	 * @return the offset in the text corresponding to pixel x
 	 */
-	protected static int getListOffset(FontMetrics fm, char[]  chars, int off0, int off, int len, float x0, float x) {
+	protected int getListOffset(FontMetrics fm, char[]  chars, int off0, int off, int len, float x0, float x) {
 		assert !String.copyValueOf(chars, off, len).contains("\t") :
 			"Text must not contain any tab characters: " + new String(chars, off, len);
 
@@ -261,11 +264,11 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		return getListOffset(fm,  chars, off0, nextOff, nextLen, x0, x);
 	}
 
-	protected static float charWidth(FontMetrics fm, char currChar) {
-		return charsWidth(fm, new char[]{currChar}, 0, 1);
+	protected float charWidth(FontMetrics fm, char currChar) {
+		return SwingUtils.charWidth(fm, currChar);
 	}
 
-	protected static float charsWidth(FontMetrics fm, char[] chars, int begin, int count) {
+	protected float charsWidth(FontMetrics fm, char[] chars, int begin, int count) {
 		float fw = SwingUtils.charsWidth(fm, chars, begin, count);
 		assert fw==doubleCharsWidth(fm, chars, begin, count) : "float value doesn't match double value";
 		return fw;

@@ -229,10 +229,11 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		converterCombo.setRenderer((list, converter, index, isSelected, cellHasFocus) ->
 			new JLabel(converter.getSimpleName()));
 		converterCombo.addItem(BufferedTokenViewModelConverter.class);
+		converterCombo.addItem(CachedTokenViewModelConverter.class);
 		converterCombo.addItem(FixedWidthTokenViewModelConverter.class);
 		converterCombo.addItem(SectionedTokenViewModelConverter.class);
 		converterCombo.addItem(DefaultTokenViewModelConverter.class);
-		converterCombo.setSelectedIndex(2);
+		converterCombo.setSelectedIndex(0);
 
 		JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 200000, 1000));
 		sizeSpinner.setValue(50000);
