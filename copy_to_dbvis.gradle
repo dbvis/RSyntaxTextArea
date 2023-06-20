@@ -1,0 +1,45 @@
+// ------------------------------------------------------
+// Task to copy jars and create pom for the dbvis project at dbvis/external/rsyntaxtextarea
+// The following libs are copied and renamed the RSyntaxTextArea subproject:
+// rsyntaxtextarea-<version>.jar -> rsyntaxtextarea_dbvis.jar
+// rsyntaxtextarea-<version>-sources.jar -> rsyntaxtextarea_dbvis-sources.jar
+// ------------------------------------------------------
+
+// Read props for copy
+def props = new Properties()
+file(System.getProperty("user.home")+"/.devenv.properties").withInputStream { props.load(it) }
+
+// The path to copy to
+def external_rsyntaxtextarea = props.getProperty("dbvis.external")+"/downloads/rsyntaxtextarea/"
+
+// Ugly way to create the pom content, but we do cannot access sub-projects for the maven plugin in this script
+def pomText = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+		"<project xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
+		"    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
+		"  <modelVersion>4.0.0</modelVersion>\n" +
+		"  <groupId>com.fifesoft</groupId>\n" +
+		"  <artifactId>rsyntaxtextarea_dbvis</artifactId>\n" +
+		"  <version>${version}</version>\n" +
+		"  <licenses>\n" +
+		"    <license>\n" +
+		"      <name>BSD-3-Clause</name>\n" +
+		"      <url>https://github.com/bobbylight/RSyntaxTextArea/tree/master/RSyntaxTextArea/src/main/resources/META-INF/LICENSE</url>\n" +
+		"    </license>\n" +
+		"  </licenses>\n" +
+		"</project>"
+
+// Task to copy jars, rename them to rsyntaxtextarea_dbvis and create the pom
+tasks.register ('publish', Copy) {
+	from ('RSyntaxTextArea/build/libs/') {
+		include "*${version}-sources.jar"
+		include "*${version}.jar"
+		rename "-${version}", "_dbvis"
+	}
+	into "${external_rsyntaxtextarea}"
+	doLast {
+		def pomFilePath = "${external_rsyntaxtextarea}/rsyntaxtextarea_dbvis.pom" as String
+		file(pomFilePath).text = pomText
+		println "Copied jars to ${external_rsyntaxtextarea}"
+		println "Created pom ${pomFilePath}"
+	}
+}
