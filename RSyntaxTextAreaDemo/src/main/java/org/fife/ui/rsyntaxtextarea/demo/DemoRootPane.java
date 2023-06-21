@@ -25,7 +25,10 @@ import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.logging.*;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 
 /**
@@ -229,17 +232,16 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		converterCombo.setRenderer((list, converter, index, isSelected, cellHasFocus) ->
 			new JLabel(converter.getSimpleName()));
 		converterCombo.addItem(BufferedTokenViewModelConverter.class);
-		converterCombo.addItem(CachedTokenViewModelConverter.class);
-		converterCombo.addItem(FixedWidthTokenViewModelConverter.class);
-		converterCombo.addItem(SectionedTokenViewModelConverter.class);
 		converterCombo.addItem(DefaultTokenViewModelConverter.class);
 		converterCombo.setSelectedIndex(0);
 
 		JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 200000, 1000));
 		sizeSpinner.setValue(50000);
 		sizeSpinner.setToolTipText("Size for selected converter (if applicable)");
-		sizeSpinner.addChangeListener(e -> setConverterSize((Class<? extends TokenViewModelConverter>)converterCombo.getSelectedItem(), (Integer) sizeSpinner.getValue()));
-		converterCombo.addItemListener(e-> setSizeSpinnerEnabledState(sizeSpinner, (Class) e.getItem()));
+		sizeSpinner.addChangeListener(e -> setConverterSize(
+			(Class<? extends TokenViewModelConverter>) converterCombo.getSelectedItem(),
+			(Integer) sizeSpinner.getValue()));
+		converterCombo.addItemListener(e -> setSizeSpinnerEnabledState(sizeSpinner, (Class) e.getItem()));
 
 		JComboBox<Level> logCombo = new JComboBox<>();
 		logCombo.addItem(Level.SEVERE);
@@ -281,7 +283,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 	}
 
 	private static void setSizeSpinnerEnabledState(JSpinner chunkSizeSpinner, Class e) {
-		boolean enabled = Objects.equals(e, BufferedTokenViewModelConverter.class) || Objects.equals(e, SectionedTokenViewModelConverter.class);
+		boolean enabled = Objects.equals(e, BufferedTokenViewModelConverter.class);
 		chunkSizeSpinner.setEnabled(enabled);
 	}
 
@@ -289,8 +291,6 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		String size = String.valueOf(value);
 		if (Objects.equals(converter, BufferedTokenViewModelConverter.class)) {
 			System.setProperty(BufferedTokenViewModelConverter.PROPERTY_CHUNK_SIZE, size);
-		} else if (Objects.equals(converter, SectionedTokenViewModelConverter.class)) {
-			System.setProperty(SectionedTokenViewModelConverter.PROPERTY_SECTION_SIZE, size);
 		} else {
 			throw new IllegalArgumentException("Unexpected class: " + converter);
 		}
@@ -698,7 +698,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 	}
 
 	private class FileOpenAction extends AbstractAction {
-		public FileOpenAction() {
+		FileOpenAction() {
 				putValue(NAME, "Open File ...");
 		}
 

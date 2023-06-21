@@ -476,16 +476,6 @@ public class TokenImpl implements Token {
 		if (BufferedTokenViewModelConverter.class.getName().equals(converterClassName)) {
 			return new BufferedTokenViewModelConverter(textArea, e);
 		}
-		if (CachedTokenViewModelConverter.class.getName().equals(converterClassName)) {
-			return new CachedTokenViewModelConverter(textArea, e);
-		}
-		if (FixedWidthTokenViewModelConverter.class.getName().equals(converterClassName)) {
-			FontMetrics fm = textArea.getFontMetrics(textArea.getFont());
-			return new FixedWidthTokenViewModelConverter(textArea, fm);
-		}
-		if (SectionedTokenViewModelConverter.class.getName().equals(converterClassName)) {
-			return new SectionedTokenViewModelConverter(textArea, e);
-		}
 		if (DefaultTokenViewModelConverter.class.getName().equals(converterClassName)) {
 			return new DefaultTokenViewModelConverter(textArea, e);
 		}

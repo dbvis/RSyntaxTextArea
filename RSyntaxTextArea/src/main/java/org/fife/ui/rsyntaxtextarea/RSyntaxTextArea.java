@@ -324,7 +324,6 @@ private boolean fractionalFontMetricsEnabled;
 	private Color[] secondaryLanguageBackgrounds;
 
 	private boolean insertPairedCharacters;
-	private FontCache[] fontCache;
 
 	/**
 	 * Constructor.
@@ -2183,7 +2182,6 @@ private boolean fractionalFontMetricsEnabled;
 		// It is assumed that any rendering hints are already applied to g2d.
 		defaultFontMetrics = g2d.getFontMetrics(getFont());
 		syntaxScheme.refreshFontMetrics(g2d);
-		fontCache = null;
 		if (!getLineWrap()) {
 			// HORRIBLE HACK!  The un-wrapped view needs to refresh its cached
 			// longest-line information.
@@ -3317,19 +3315,6 @@ private boolean fractionalFontMetricsEnabled;
 		if (graphics != null) {
 			refreshFontMetrics(getGraphics2D(graphics));
 		}
-	}
-
-	public FontCache getFontCacheForTokenType(int type) {
-		if (fontCache == null) {
-			 fontCache = new FontCache[getSyntaxScheme().getStyleCount()];
-		}
-
-		if (fontCache[type] == null) {
-			FontMetrics fm = getFontMetricsForTokenType(type);
-			fontCache[type] = new FontCache(fm);
-		}
-
-		return fontCache[type];
 	}
 
 	/**

@@ -16,7 +16,6 @@ import javax.swing.text.Utilities;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
-import java.util.StringJoiner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,7 +69,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		last = token.getOffset();
 
 		// loop over tokens
-		LOG.finest(()->dumpTokens(tokenList));
 		started = System.currentTimeMillis();
 		while (token != null && token.isPaintable()) {
 
@@ -93,29 +91,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		// If we didn't find anything, return the end position of the text.
 		LOG.fine(()->"EOL");
 		return last;
-	}
-
-	protected String dumpTokens(TokenImpl tokenList) {
-		int maxLength = 0;
-		Token longestToken = null;
-		int count=0;
-		StringJoiner sj = new StringJoiner("\n", tokenList +"\n", "");
-
-		for (Token t = tokenList; t != null && t.isPaintable(); t = t.getNextToken()) {
-			int length = t.length();
-			if (length>maxLength) {
-				maxLength = length;
-				longestToken = t;
-			}
-			int first = t.getOffset();
-			int last = t.getEndOffset()-1;
-			String lexeme = length < 10 ? t.getLexeme() : t.getLexeme().substring(0, 4) + "..." + t.getLexeme().substring(length-4);
-			lexeme = lexeme==null ? null : lexeme.replace("\t", "\\t");
-			sj.add(String.format("Token%,4d: %,6d -> %,6d | %,d chars [%s]", count++, first, last, length, lexeme));
-		}
-
-		sj.add(String.format("%,d tokens%nLongest token is %,d characters:%n%s", count, maxLength, longestToken));
-		return sj.toString();
 	}
 
 	protected abstract int getTokenListOffset();
@@ -150,9 +125,8 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 * Place-holder to let subclasses override as necessary.
 	 * The default implementation is identical to the default implementation in {@link DefaultTokenViewModelConverter}.
 	 *
-	 * @return The bounding box for the specified position in the model.
+	 * @return The position (in the document, NOT into the token list!) that covers the pixel location.
 	 * @see DefaultTokenViewModelConverter#listOffsetToView(TokenImpl, TabExpander, int, float, Rectangle2D)
-	 * @see TokenViewModelConverter#listOffsetToView(TokenImpl, TabExpander, int, float, Rectangle2D)
 	 */
 	protected Rectangle2D tokenListOffsetToView() {
 		Segment s = new Segment();
@@ -177,15 +151,15 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 				// Must use this (actually fm.charWidth()), and not
 				// fm.charsWidth() for returned value to match up with where
 				// text is actually painted on OS X!
-				float w = getTabbedTextWidth(s, fm);
+				float w = Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander, token.getOffset());
 				SwingUtils.setX(rect, stableX + w);
 				end = token.documentToToken(pos);
 
 				if (text[end] == '\t') {
-					SwingUtils.setWidth(rect, charWidth(fm, ' '));
+					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, ' '));
 				}
 				else {
-					SwingUtils.setWidth(rect, charWidth(fm, text[end]));
+					SwingUtils.setWidth(rect, SwingUtils.charWidth(fm, text[end]));
 				}
 
 				return rect;
@@ -197,7 +171,8 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 				s.array = token.text;
 				s.offset = token.textOffset;
 				s.count = token.textCount;
-				stableX += getTabbedTextWidth(s, fm);
+				stableX += Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander,
+					token.getOffset());
 			}
 
 			token = (TokenImpl)token.getNextToken();
@@ -210,10 +185,6 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		SwingUtils.setX(rect, stableX);
 		SwingUtils.setWidth(rect, 1);
 		return rect;
-	}
-
-	protected float getTabbedTextWidth(Segment s, FontMetrics fm) {
-		return Utilities.getTabbedTextWidth(s, fm, stableX, tabExpander, token.getOffset());
 	}
 
 	/**
@@ -233,7 +204,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 * @param x     The pixel-position for which you want to get the corresponding offset.
 	 * @return the offset in the text corresponding to pixel x
 	 */
-	protected int getListOffset(FontMetrics fm, char[]  chars, int off0, int off, int len, float x0, float x) {
+	protected static int getListOffset(FontMetrics fm, char[]  chars, int off0, int off, int len, float x0, float x) {
 		assert !String.copyValueOf(chars, off, len).contains("\t") :
 			"Text must not contain any tab characters: " + new String(chars, off, len);
 
@@ -264,17 +235,18 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		return getListOffset(fm,  chars, off0, nextOff, nextLen, x0, x);
 	}
 
-	protected float charWidth(FontMetrics fm, char currChar) {
-		return SwingUtils.charWidth(fm, currChar);
+	protected static float charWidth(FontMetrics fm, char currChar) {
+		return charsWidth(fm, new char[]{currChar}, 0, 1);
 	}
 
-	protected float charsWidth(FontMetrics fm, char[] chars, int begin, int count) {
+	protected static float charsWidth(FontMetrics fm, char[] chars, int begin, int count) {
 		float fw = SwingUtils.charsWidth(fm, chars, begin, count);
 		assert fw==doubleCharsWidth(fm, chars, begin, count) : "float value doesn't match double value";
 		return fw;
 	}
 
 	private static double doubleCharsWidth(FontMetrics fm, char[] chars, int begin, int count) {
+
 		FontRenderContext frc = fm.getFontRenderContext();
 		Font font = fm.getFont();
 		int limit = begin + count;
