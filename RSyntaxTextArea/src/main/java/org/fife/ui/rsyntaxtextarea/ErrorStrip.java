@@ -204,7 +204,7 @@ public class ErrorStrip extends JPanel {
 	 * @param c The color.
 	 * @return A brighter color.
 	 */
-	private Color getBrighterColor(Color c) {
+	protected Color getBrighterColor(Color c) { // DBVIS-7945 Make protected to allow override
 		if (brighterColors==null) {
 			brighterColors = new HashMap<>(5); // Usually small
 		}
@@ -569,7 +569,7 @@ public class ErrorStrip extends JPanel {
 	 * @return The line.
 	 * @see #lineToY(int)
 	 */
-	private int yToLine(int y) {
+	protected int yToLine(int y) { // DBVIS-7945 Make protected to allow override
 		int line = -1;
 		int h = textArea.getVisibleRect().height;
 
