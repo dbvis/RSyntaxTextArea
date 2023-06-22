@@ -23,7 +23,7 @@ import org.fife.util.SwingUtils;
  * @author Robert Futrell
  * @version 1.0
  */
-class DefaultTokenPainter implements TokenPainter {
+public class DefaultTokenPainter implements TokenPainter { // DBVIS-5813 Make class public
 
 	/**
 	 * Rectangle used for filling token backgrounds.
@@ -38,9 +38,9 @@ class DefaultTokenPainter implements TokenPainter {
 	private static char[] tabBuf;
 
 
-	DefaultTokenPainter() {
+	public DefaultTokenPainter() {
 		bgRect = new Rectangle2D.Float();
-	}
+	} // DBVIS-5813 make public
 
 
 	@Override

@@ -233,7 +233,7 @@ public class RSyntaxTextArea extends RTextArea implements SyntaxConstants {
 	private boolean clearWhitespaceLines;
 
 	/** Whether we are displaying visible whitespace (spaces and tabs). */
-	private boolean whitespaceVisible;
+	protected boolean whitespaceVisible; // DBVIS-5813 make protected
 
 	/** Whether EOL markers should be visible at the end of each line. */
 	private boolean eolMarkersVisible;
@@ -1889,6 +1889,16 @@ private boolean fractionalFontMetricsEnabled;
 		return tokenPainter;
 	}
 
+	/**
+	 * DBVIS-5813 New method to add NBSP painting
+	 * Sets the painter to use for rendering tokens.
+	 *
+	 * @param tokenPainter The painter to use for rendering tokens.
+	 */
+	public void setTokenPainter(TokenPainter tokenPainter) {
+		this.tokenPainter = tokenPainter;
+		repaint();
+	}
 
 	/**
 	 * Returns the tool tip to display for a mouse event at the given
