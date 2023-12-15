@@ -470,7 +470,7 @@ public class TokenImpl implements Token {
 	 */
 	protected TokenViewModelConverter getTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
 		String converterClassName = System.getProperty(
-			TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, BufferedTokenViewModelConverter.class.getName());
+			TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, DefaultTokenViewModelConverter.class.getName());
 
 		// known implementers
 		if (BufferedTokenViewModelConverter.class.getName().equals(converterClassName)) {
