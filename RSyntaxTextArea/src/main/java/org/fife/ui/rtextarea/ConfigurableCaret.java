@@ -76,18 +76,21 @@ public class ConfigurableCaret extends DefaultCaret {
 
 	/**
 	 * The offset into the document where selection started.
+	 * DBVIS-8666 Open to subclass
 	 */
-	private int selectionStart;
+	protected int selectionStart;
 
 	/**
 	 * The offset into the document where selection ended.
+	 * DBVIS-8666 Open to subclass
 	 */
-	private int selectionEnd;
+	protected int selectionEnd;
 
 	/**
 	 * Defines the current selection behavior.
+	 * DBVIS-8666 Open to subclass
 	 */
-	private SelectionType selectionType;
+	protected SelectionType selectionType;
 
 	/**
 	 * Creates the caret using {@link CaretStyle#THICK_VERTICAL_LINE_STYLE}.
@@ -538,8 +541,8 @@ public class ConfigurableCaret extends DefaultCaret {
 
 	}
 
-
-	private void select(int mark, int dot) {
+	// DBVIS-8666 Open to subclass
+	protected void select(int mark, int dot) {
 		if (mark != getMark()) {
 			setDot(mark);
 		}
