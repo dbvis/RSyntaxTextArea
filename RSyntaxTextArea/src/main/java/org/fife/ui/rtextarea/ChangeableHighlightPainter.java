@@ -18,6 +18,7 @@ import java.awt.Paint;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.SystemColor;
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -299,8 +300,13 @@ public class ChangeableHighlightPainter
 			try {
 				Shape s = view.modelToView(offs0, bounds,
 											Position.Bias.Forward);
-				Rectangle r = s.getBounds();
-				g.drawLine(r.x, r.y, r.x, r.y+r.height);
+				// DBVIS-8851 + RSTA issue 457 ...
+				Rectangle2D r = s.getBounds2D();
+				int x = (int) Math.round(r.getX());
+				int y = (int) Math.round(r.getY());
+				int height = (int) Math.round(r.getY() + r.getHeight());
+				g2d.drawLine(x, y, x, height);
+				// ... DBVIS-8851 + RSTA issue 457
 				return r;
 			} catch (BadLocationException ble) {
 				ble.printStackTrace(); // Never happens
