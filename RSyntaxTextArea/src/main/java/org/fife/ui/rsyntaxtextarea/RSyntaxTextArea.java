@@ -1830,7 +1830,7 @@ private boolean fractionalFontMetricsEnabled;
 				// Document offset MUST be correct to prevent exceptions
 				// in getTokenListFor()
 				int docOffs = map.getElement(line).getEndOffset()-1;
-				t = createEndOfLineToken(docOffs);
+				t = createEndOfLineToken(docOffs, lastToken); // DBVIS-8381
 				lastToken.setNextToken(t);
 				lastToken = t;
 			}
@@ -1872,10 +1872,13 @@ private boolean fractionalFontMetricsEnabled;
 	 * <p/>
 	 * Extracted to allow subclasses to override for supporting embedded languages
 	 * where the End-Of-Line token may be of a different type.
+	 *
 	 * @param startOffset see {@link TokenImpl#TokenImpl(char[], int, int, int, int, int)}
+	 * @param lastToken the last token on the line
 	 * @return a new {@link Token#WHITESPACE} token at the specified document offset
 	 */
-	protected TokenImpl createEndOfLineToken(int startOffset) {
+	@SuppressWarnings("unused")
+	protected TokenImpl createEndOfLineToken(int startOffset, TokenImpl lastToken) {
 		return new TokenImpl(new char[] { '\n' }, 0,0, startOffset, Token.WHITESPACE, 0);
 	}
 
