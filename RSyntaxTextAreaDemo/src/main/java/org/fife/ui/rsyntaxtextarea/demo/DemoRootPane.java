@@ -5,15 +5,25 @@
 package org.fife.ui.rsyntaxtextarea.demo;
 
 import java.awt.*;
+import org.fife.ui.rsyntaxtextarea.*;
+import org.fife.ui.rtextarea.FoldIndicatorStyle;
+import org.fife.ui.rtextarea.Gutter;
+import org.fife.ui.rtextarea.RTextScrollPane;
+import org.fife.util.SwingUtils;
+
+import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Enumeration;
 import java.util.Locale;
 
 import javax.swing.*;
@@ -26,6 +36,11 @@ import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.ui.rtextarea.LineNumberFormatter;
 import org.fife.ui.rtextarea.LineNumberList;
+import java.util.Objects;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 
 /**
@@ -44,8 +59,8 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 	DemoRootPane() {
 		textArea = createTextArea();
-		setText("JavaExample.txt");
-		textArea.setSyntaxEditingStyle(SYNTAX_STYLE_JAVA);
+		textArea.setSyntaxEditingStyle(SYNTAX_STYLE_NONE);
+		textArea.setTabSize(4);
 		scrollPane = new RTextScrollPane(textArea, true);
 		Gutter gutter = scrollPane.getGutter();
 		gutter.setBookmarkingEnabled(true);
@@ -56,6 +71,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		//errorStrip.setBackground(java.awt.Color.blue);
 		getContentPane().add(errorStrip, BorderLayout.LINE_END);
 		setJMenuBar(createMenuBar());
+		getContentPane().add(createFontControls(), BorderLayout.SOUTH);
 	}
 
 
@@ -124,10 +140,15 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		addSyntaxItem("Ruby", "RubyExample.txt", SYNTAX_STYLE_RUBY, bg, menu);
 		addSyntaxItem("Rust", "RustExample.txt", SYNTAX_STYLE_RUST, bg, menu);
 		addSyntaxItem("SQL",  "SQLExample.txt", SYNTAX_STYLE_SQL, bg, menu);
+		addSyntaxItem("Text",  "TextExample.txt", SYNTAX_STYLE_NONE, bg, menu);
+		addSyntaxItem("Text Alignment",  "TextAlignmentExample.txt", SYNTAX_STYLE_NONE, bg, menu);
+		addSyntaxItem("Text Performance",  "TextPerformanceExample.txt", SYNTAX_STYLE_NONE, bg, menu);
 		addSyntaxItem("TypeScript", "TypeScriptExample.txt", SYNTAX_STYLE_TYPESCRIPT, bg, menu);
 		addSyntaxItem("XML",  "XMLExample.txt", SYNTAX_STYLE_XML, bg, menu);
 		addSyntaxItem("YAML", "YamlExample.txt", SYNTAX_STYLE_YAML, bg, menu);
-		menu.getItem(2).setSelected(true);
+		menu.addSeparator();
+		menu.add(new JMenuItem(new FileOpenAction()));
+
 		mb.add(menu);
 
 		menu = new JMenu("View");
@@ -179,6 +200,8 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		menu.add(cbItem);
 		cbItem = new JCheckBoxMenuItem(new TabLinesAction());
 		menu.add(cbItem);
+		cbItem = new JCheckBoxMenuItem(new WhitespaceVisibleAction());
+		menu.add(cbItem);
 		mb.add(menu);
 
 		menu = new JMenu("LookAndFeel");
@@ -202,14 +225,119 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		mb.add(menu);
 
 		menu = new JMenu("Help");
-		JMenuItem item = new JMenuItem(new AboutAction());
-		menu.add(item);
+		menu.add(new JMenuItem(new AboutAction()));
 		mb.add(menu);
 
 		return mb;
-
 	}
 
+	private Component createFontControls() {
+		JPanel panel = new JPanel();
+
+		JSpinner tabSize = new JSpinner();
+		tabSize.setModel(new SpinnerNumberModel(4, 1, 72, -1));
+		tabSize.addChangeListener(e -> textArea.setTabSize((Integer) tabSize.getValue()));
+
+		JSpinner fontSize = new JSpinner();
+		fontSize.setModel(new SpinnerNumberModel(12, 2, 72, -1));
+		fontSize.addChangeListener(e -> textArea.setFont(deriveFont(textArea.getFont(), fontSize)));
+
+		JCheckBox mono = new JCheckBox("Monospaced");
+		mono.setSelected(false);
+
+		JComboBox<Font> fontCombo = new JComboBox<>();
+		fontCombo.addItemListener(e -> textArea.setFont(deriveFont((Font) e.getItem(), fontSize)));
+		fontCombo.setRenderer((list, font, index, isSelected, cellHasFocus) -> new JLabel(font.getFontName()));
+		fillFontCombo(fontCombo, mono.isSelected());
+		mono.addItemListener(evt->fillFontCombo(fontCombo, mono.isSelected()));
+
+		JComboBox<Class<?>> converterCombo = new JComboBox<>();
+		converterCombo.addItemListener(e ->
+			System.setProperty(TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, ((Class<?>) e.getItem()).getName()));
+		converterCombo.setRenderer((list, converter, index, isSelected, cellHasFocus) ->
+			new JLabel(converter.getSimpleName()));
+		converterCombo.addItem(BufferedTokenViewModelConverter.class);
+		converterCombo.addItem(DefaultTokenViewModelConverter.class);
+		converterCombo.setSelectedIndex(0);
+
+		JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 200000, 1000));
+		sizeSpinner.setValue(50000);
+		sizeSpinner.setToolTipText("Size for selected converter (if applicable)");
+		sizeSpinner.addChangeListener(e -> setConverterSize(
+			(Class<? extends TokenViewModelConverter>) converterCombo.getSelectedItem(),
+			(Integer) sizeSpinner.getValue()));
+		converterCombo.addItemListener(e -> setSizeSpinnerEnabledState(sizeSpinner, (Class) e.getItem()));
+
+		JComboBox<Level> logCombo = new JComboBox<>();
+		logCombo.addItem(Level.SEVERE);
+		logCombo.addItem(Level.WARNING);
+		logCombo.addItem(Level.INFO);
+		logCombo.addItem(Level.FINE);
+		logCombo.addItem(Level.FINER);
+		logCombo.addItem(Level.FINEST);
+		logCombo.addItemListener(e -> setLogLevel((Level) e.getItem()));
+		logCombo.setSelectedIndex(2);
+
+		panel.add(new JLabel("Tab Size:"));
+		panel.add(tabSize);
+		panel.add(mono);
+		panel.add(fontCombo);
+		panel.add(fontSize);
+		panel.add(converterCombo);
+		panel.add(sizeSpinner);
+		panel.add(new JLabel("Logging:"));
+		panel.add(logCombo);
+
+		return panel;
+	}
+
+	private void setLogLevel(Level level) {
+		LogManager lm = LogManager.getLogManager();
+		Logger rootLogger = lm.getLogger("");
+		for (Handler h: rootLogger.getHandlers()) {
+			h.setLevel(level);
+		}
+
+		Enumeration<String> loggerNames = lm.getLoggerNames();
+		while (loggerNames.hasMoreElements()) {
+			String name = loggerNames.nextElement();
+			if (name.startsWith("org.fife.ui.rsyntaxtextarea.")) {
+				lm.getLogger(name).setLevel(level);
+			}
+		}
+	}
+
+	private static void setSizeSpinnerEnabledState(JSpinner chunkSizeSpinner, Class e) {
+		boolean enabled = Objects.equals(e, BufferedTokenViewModelConverter.class);
+		chunkSizeSpinner.setEnabled(enabled);
+	}
+
+	private static void setConverterSize(Class<? extends TokenViewModelConverter> converter, int value) {
+		String size = String.valueOf(value);
+		if (Objects.equals(converter, BufferedTokenViewModelConverter.class)) {
+			System.setProperty(BufferedTokenViewModelConverter.PROPERTY_CHUNK_SIZE, size);
+		} else {
+			throw new IllegalArgumentException("Unexpected class: " + converter);
+		}
+	}
+
+	private Font deriveFont(Font item, JSpinner fontSize) {
+		return item.deriveFont(1.0f*(int) fontSize.getValue());
+	}
+
+	private void fillFontCombo(JComboBox<Font> fontCombo, boolean onlyMonospaced) {
+		Font appFont = new JLabel().getFont();
+		String[] fontFamilyNames = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+
+		fontCombo.removeAllItems();
+		for (String name : fontFamilyNames) {
+			Font font = new Font(name, Font.PLAIN, appFont.getSize());
+			if (!onlyMonospaced || SwingUtils.isMonospaced(getFontMetrics(font))) {
+				fontCombo.addItem(font);
+			}
+		}
+		fontCombo.setSelectedItem(appFont);
+	}
 
 	/**
 	 * Creates the text area for this application.
@@ -226,6 +354,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		textArea.setMarkOccurrences(true);
 		textArea.setCodeFoldingEnabled(true);
 		textArea.setClearWhitespaceLinesEnabled(false);
+		addPropertyChangeListener(evt->textArea.onGraphicsChange());
 
 		InputMap im = textArea.getInputMap();
 		ActionMap am = textArea.getActionMap();
@@ -579,6 +708,24 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 	}
 
 	/**
+	 * Toggles line number visibility.
+	 */
+	private class WhitespaceVisibleAction extends AbstractAction {
+
+		private boolean selected;
+
+		WhitespaceVisibleAction() {
+			putValue(NAME, "Whitespace");
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			selected = !selected;
+			textArea.setWhitespaceVisible(selected);
+		}
+
+	}
+	/**
 	 * Toggles word wrap.
 	 */
 	private class WordWrapAction extends AbstractAction {
@@ -624,5 +771,29 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		}
 	}
 
+	private class FileOpenAction extends AbstractAction {
+		FileOpenAction() {
+				putValue(NAME, "Open File ...");
+		}
 
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			JFileChooser chooser = new JFileChooser();
+			int result = chooser.showOpenDialog(DemoRootPane.this);
+			if (result == JFileChooser.APPROVE_OPTION) {
+				File file = chooser.getSelectedFile();
+				if (file != null) {
+					Path path = file.toPath();
+					if (Files.isRegularFile(path)) {
+						try {
+							textArea.setText(Files.readString(path, StandardCharsets.UTF_8));
+						} catch (IOException e1) {
+							textArea.setText(String.format("Unable to read file: %s%n%s", file, e1));
+						}
+					}
+				}
+			}
+		}
+
+	}
 }

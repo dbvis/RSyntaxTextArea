@@ -8,14 +8,16 @@
  */
 package org.fife.ui.rsyntaxtextarea;
 
+import org.fife.util.SwingUtils;
+
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import java.awt.Rectangle;
-
-import javax.swing.text.Segment;
-import javax.swing.text.TabExpander;
-import javax.swing.text.Utilities;
+import java.awt.geom.Rectangle2D;
+import javax.swing.text.*;
+import java.lang.reflect.Constructor;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -32,6 +34,8 @@ import javax.swing.text.Utilities;
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
 public class TokenImpl implements Token {
+
+	private static final Logger LOG = Logger.getLogger(TokenImpl.class.getName());
 
 	/**
 	 * The text this token represents.  This is implemented as a segment so we
@@ -66,7 +70,6 @@ public class TokenImpl implements Token {
 	 * The language this token is in, <code>&gt;= 0</code>.
 	 */
 	private int languageIndex;
-
 
 	/**
 	 * Creates a "null" token.  The token itself is not null; rather, it
@@ -455,53 +458,40 @@ public class TokenImpl implements Token {
 			float x0, float x) {
 
 		// If the coordinate in question is before this line's start, quit.
-		if (x0 >= x) {
-			return getOffset();
-		}
-
-		float currX = x0; // x-coordinate of current char.
-		float nextX = x0; // x-coordinate of next char.
-		float stableX = x0; // Cached ending x-coord. of last tab or token.
-		TokenImpl token = this;
-		int last = getOffset();
-		FontMetrics fm;
-
-		while (token != null && token.isPaintable()) {
-
-			fm = textArea.getFontMetricsForTokenType(token.getType());
-			char[] text = token.text;
-			int start = token.textOffset;
-			int end = start + token.textCount;
-
-			for (int i = start; i < end; i++) {
-				currX = nextX;
-				if (text[i] == '\t') {
-					nextX = e.nextTabStop(nextX, 0);
-					stableX = nextX; // Cache ending x-coord. of tab.
-					start = i + 1; // Do charsWidth() from next char.
-				}
-				else {
-					nextX = stableX + fm.charsWidth(text, start, i - start + 1);
-				}
-				if (x >= currX && x < nextX) {
-					if ((x - currX) < (nextX - x)) {
-						return last + i - token.textOffset;
-					}
-					return last + i + 1 - token.textOffset;
-				}
-			}
-
-			stableX = nextX; // Cache ending x-coordinate of token.
-			last += token.textCount;
-			token = (TokenImpl)token.getNextToken();
-
-		}
-
-		// If we didn't find anything, return the end position of the text.
-		return last;
-
+		return x0 >= x ? getOffset() : getTokenViewModelConverter(textArea, e).getListOffset(this, x0, x);
 	}
 
+	/**
+	 * Get the appropriate implementation of {@link TokenViewModelConverter}.
+	 *
+	 * @param textArea The text area from which the token list was derived.
+	 * @param e How to expand tabs.
+	 * @return TokenViewModelConverter
+	 */
+	protected TokenViewModelConverter getTokenViewModelConverter(RSyntaxTextArea textArea, TabExpander e) {
+		String converterClassName = System.getProperty(
+			TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, DefaultTokenViewModelConverter.class.getName());
+
+		// known implementers
+		if (BufferedTokenViewModelConverter.class.getName().equals(converterClassName)) {
+			return new BufferedTokenViewModelConverter(textArea, e);
+		}
+		if (DefaultTokenViewModelConverter.class.getName().equals(converterClassName)) {
+			return new DefaultTokenViewModelConverter(textArea, e);
+		}
+
+		// unknown implementation
+		try {
+			Class<?> converterClass = Class.forName(converterClassName);
+			Constructor<?> constructor = converterClass.getConstructor(RSyntaxTextArea.class, TabExpander.class);
+			TokenViewModelConverter converter = (TokenViewModelConverter) constructor.newInstance(textArea, e);
+			return converter;
+		} catch (ReflectiveOperationException ex) {
+			LOG.log(Level.WARNING, String.format("Unable to instantiate converter '%s', proceeding with default (%s)",
+				converterClassName, DefaultTokenViewModelConverter.class.getName()), ex);
+			return new DefaultTokenViewModelConverter(textArea, e);
+		}
+	}
 
 	@Override
 	public Token getNextToken() {
@@ -529,7 +519,7 @@ public class TokenImpl implements Token {
 				x = e.nextTabStop(x, 0);
 			}
 			else {
-				x += fm.charWidth(text[i]);
+				x += SwingUtils.charWidth(fm, text[i]);
 			}
 			if (x>endBeforeX) {
 				// If not even the first character fits into the space, go
@@ -588,7 +578,7 @@ public class TokenImpl implements Token {
 					// for here, so we check before calling.
 					w = i - currentStart;
 					if (w > 0) {
-						width += fm.charsWidth(text, currentStart, w);
+						width += SwingUtils.charsWidth(fm, text, currentStart, w);
 					}
 					currentStart = i + 1;
 					width = e.nextTabStop(width, 0);
@@ -598,7 +588,7 @@ public class TokenImpl implements Token {
 			// point to get the widths for, so we don't check for w>0 (mini-
 			// optimization).
 			w = endBefore - currentStart;
-			width += fm.charsWidth(text, currentStart, w);
+			width += SwingUtils.charsWidth(fm, text, currentStart, w);
 		}
 		return width - x0;
 	}
@@ -714,75 +704,11 @@ public class TokenImpl implements Token {
 
 
 	@Override
-	public Rectangle listOffsetToView(RSyntaxTextArea textArea, TabExpander e,
-			int pos, int x0, Rectangle rect) {
-
-		int stableX = x0; // Cached ending x-coord. of last tab or token.
-		TokenImpl token = this;
-		FontMetrics fm;
-		Segment s = new Segment();
-
-		while (token != null && token.isPaintable()) {
-
-			fm = textArea.getFontMetricsForTokenType(token.getType());
-			if (fm == null) {
-				return rect; // Don't return null as things will error.
-			}
-			char[] text = token.text;
-			int start = token.textOffset;
-			int end = start + token.textCount;
-
-			// If this token contains the position for which to get the
-			// bounding box...
-			if (token.containsPosition(pos)) {
-
-				s.array = token.text;
-				s.offset = token.textOffset;
-				s.count = pos - token.getOffset();
-
-				// Must use this (actually fm.charWidth()), and not
-				// fm.charsWidth() for returned value to match up with where
-				// text is actually painted on OS X!
-				int w = Utilities.getTabbedTextWidth(s, fm, stableX, e,
-						token.getOffset());
-				rect.x = stableX + w;
-				end = token.documentToToken(pos);
-
-				if (text[end] == '\t') {
-					rect.width = fm.charWidth(' ');
-				}
-				else {
-					rect.width = fm.charWidth(text[end]);
-				}
-
-				return rect;
-
-			}
-
-			// If this token does not contain the position for which to get
-			// the bounding box...
-			else {
-				s.array = token.text;
-				s.offset = token.textOffset;
-				s.count = token.textCount;
-				stableX += Utilities.getTabbedTextWidth(s, fm, stableX, e,
-						token.getOffset());
-			}
-
-			token = (TokenImpl)token.getNextToken();
-
-		}
-
-		// If we didn't find anything, we're at the end of the line. Return
-		// a width of 1 (so selection highlights don't extend way past line's
-		// text). A ConfigurableCaret will know to paint itself with a larger
-		// width.
-		rect.x = stableX;
-		rect.width = 1;
-		return rect;
-
+	public Rectangle2D listOffsetToView(RSyntaxTextArea textArea, TabExpander e,
+			int pos, float x0, Rectangle2D rect) {
+		TokenViewModelConverter converter = getTokenViewModelConverter(textArea, e);
+		return converter.listOffsetToView(this, e, pos, x0, rect);
 	}
-
 
 	/**
 	 * Makes this token start at the specified offset into the document.<p>
