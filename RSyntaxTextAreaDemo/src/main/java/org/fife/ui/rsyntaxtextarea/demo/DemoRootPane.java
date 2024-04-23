@@ -4,11 +4,8 @@
  */
 package org.fife.ui.rsyntaxtextarea.demo;
 
-import java.awt.*;
 import org.fife.ui.rsyntaxtextarea.*;
-import org.fife.ui.rtextarea.FoldIndicatorStyle;
-import org.fife.ui.rtextarea.Gutter;
-import org.fife.ui.rtextarea.RTextScrollPane;
+import org.fife.ui.rtextarea.*;
 import org.fife.util.SwingUtils;
 
 import javax.swing.*;
@@ -25,17 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Locale;
-
-import javax.swing.*;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
-
-import org.fife.ui.rsyntaxtextarea.*;
-import org.fife.ui.rtextarea.FoldIndicatorStyle;
-import org.fife.ui.rtextarea.Gutter;
-import org.fife.ui.rtextarea.RTextScrollPane;
-import org.fife.ui.rtextarea.LineNumberFormatter;
-import org.fife.ui.rtextarea.LineNumberList;
 import java.util.Objects;
 import java.util.logging.Handler;
 import java.util.logging.Level;
