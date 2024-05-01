@@ -559,14 +559,46 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 	 * <code>RSyntaxTextArea</code>.
 	 *
 	 * @param tokenMaker The new token maker to use.
+	 *
 	 * @see #setSyntaxStyle(String)
 	 */
 	public void setSyntaxStyle(TokenMaker tokenMaker) {
-		this.tokenMaker = tokenMaker;
-		updateSyntaxHighlightingInformation();
-		this.syntaxStyle = "text/unknown"; // TODO: Make me public?
+		setSyntaxStyle(tokenMaker, "text/unknown");
 	}
 
+	// ------------------------
+	// ADDITIONS FOR DBVIS-9154
+	// ------------------------
+	/**
+	 * Set the supplied {@link TokenMaker} and style.
+	 *
+	 * @param tokenMaker The new token maker to use.
+	 * @param styleKey The new style to use (see {@link #setSyntaxStyle(String)}
+	 *
+	 * @see SyntaxConstants
+	 */
+	public void setSyntaxStyle(TokenMaker tokenMaker, String styleKey) {
+		this.tokenMaker = tokenMaker;
+		updateSyntaxHighlightingInformation();
+		this.syntaxStyle = styleKey; // TODO: Make me public?
+	}
+
+	/**
+	 * @return current {@link TokenMaker} or <code>null</code>
+	 */
+	public TokenMaker getTokenMaker() {
+		return tokenMaker;
+	}
+
+	/**
+	 * @return current {@link TokenMakerFactory} or <code>null</code>
+	 */
+	public TokenMakerFactory getTokenMakerFactory() {
+		return tokenMakerFactory;
+	}
+	// ----------------------------
+	// END ADDITIONS FOR DBVIS-9154
+	// ----------------------------
 
 	/**
 	 * Sets the token maker factory used by this document.
@@ -578,7 +610,6 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 		tokenMakerFactory = tmf!=null ? tmf :
 			TokenMakerFactory.getDefaultInstance();
 	}
-
 
 	/**
 	 * Loops through the last-tokens-on-lines array from a specified point
@@ -655,7 +686,7 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 	 *
 	 * This is called internally whenever the syntax style changes.
 	 */
-	private void updateSyntaxHighlightingInformation() {
+	public void updateSyntaxHighlightingInformation() { // DBVIS-9154
 
 		// Reinitialize the "last token on each line" array.  Note that since
 		// the actual text in the document isn't changing, the number of lines
