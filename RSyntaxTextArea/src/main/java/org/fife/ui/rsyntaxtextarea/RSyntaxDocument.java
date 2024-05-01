@@ -563,7 +563,8 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 	 * @see #setSyntaxStyle(String)
 	 */
 	public void setSyntaxStyle(TokenMaker tokenMaker) {
-		setSyntaxStyle(tokenMaker, "text/unknown");
+		// DBVIS-9154
+		setSyntaxStyle(tokenMaker, "text/unknown");  // TODO: Make me public?
 	}
 
 	// ------------------------
@@ -580,7 +581,7 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 	public void setSyntaxStyle(TokenMaker tokenMaker, String styleKey) {
 		this.tokenMaker = tokenMaker;
 		updateSyntaxHighlightingInformation();
-		this.syntaxStyle = styleKey; // TODO: Make me public?
+		this.syntaxStyle = styleKey;
 	}
 
 	/**
