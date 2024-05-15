@@ -3473,7 +3473,7 @@ private boolean fractionalFontMetricsEnabled;
 	/**
 	 * Handles hyperlinks.
 	 */
-	private class RSyntaxTextAreaMutableCaretEvent
+	public class RSyntaxTextAreaMutableCaretEvent // DBVIS-9118
 					extends RTextAreaMutableCaretEvent {
 
 		private Insets insets;
