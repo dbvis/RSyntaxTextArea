@@ -974,9 +974,9 @@ public class SyntaxView extends View implements TabExpander,
 				int p0 = line.getStartOffset();
 				Token tokenList = doc.getTokenListForLine(lineIndex);
 				tabBase = alloc.x;
-				int offs = tokenList.getListOffset(
+				int offs = tokenList != null ? tokenList.getListOffset(
 									(RSyntaxTextArea)getContainer(),
-									this, tabBase, x);
+									this, tabBase, x) : -1;
 				return offs!=-1 ? offs : p0;
 			}
 
