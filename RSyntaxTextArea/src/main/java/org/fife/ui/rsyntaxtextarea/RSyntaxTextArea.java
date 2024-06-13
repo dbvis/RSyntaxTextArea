@@ -3047,6 +3047,30 @@ private boolean fractionalFontMetricsEnabled;
 
 	}
 
+	/**
+	 * Sets what type of syntax highlighting this editor is doing using a specific {@link TokenMaker}.
+	 * This method fires a property change of type {@link #SYNTAX_STYLE_PROPERTY}.
+	 * You should call this method if you've created a custom token maker for a language
+	 * not normally supported by <code>RSyntaxTextArea</code>.
+	 *
+	 * @param tokenMaker The new token maker to use.
+	 * @param styleKey  The new style to use, such as {@link SyntaxConstants#SYNTAX_STYLE_JAVA}.
+	 * @see #setSyntaxEditingStyle(String)
+	 * @see RSyntaxDocument#setSyntaxStyle(TokenMaker, String)
+	 * @see SyntaxConstants
+	 */
+	public void setSyntaxEditingStyle(TokenMaker tokenMaker, String styleKey) {
+		((RSyntaxDocument)getDocument()).setSyntaxStyle(tokenMaker, styleKey);
+
+		if (styleKey==null) {
+			styleKey = SYNTAX_STYLE_NONE;
+		}
+		if (!styleKey.equals(syntaxStyleKey)) {
+			String oldStyle = syntaxStyleKey;
+			syntaxStyleKey = styleKey;
+			firePropertyChange(SYNTAX_STYLE_PROPERTY, oldStyle, styleKey);
+		}
+	}
 
 	/**
 	 * Sets all the colors used in syntax highlighting to the colors
