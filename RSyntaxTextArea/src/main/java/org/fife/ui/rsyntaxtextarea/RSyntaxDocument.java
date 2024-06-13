@@ -567,22 +567,24 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 		setSyntaxStyle(tokenMaker, "text/unknown");  // TODO: Make me public?
 	}
 
-	// ------------------------
-	// ADDITIONS FOR DBVIS-9154
-	// ------------------------
 	/**
-	 * Set the supplied {@link TokenMaker} and style.
+	 * Sets the syntax style being used for syntax highlighting in this
+	 * document. You should call this method if you've created a custom token
+	 * maker for a language not normally supported by <code>RSyntaxTextArea</code>.
 	 *
 	 * @param tokenMaker The new token maker to use.
-	 * @param styleKey The new style to use (see {@link #setSyntaxStyle(String)}
-	 *
-	 * @see SyntaxConstants
+	 * @param styleKey  The new style to use, such as {@link SyntaxConstants#SYNTAX_STYLE_JAVA}.
+	 * @see #setSyntaxStyle(TokenMaker)
 	 */
 	public void setSyntaxStyle(TokenMaker tokenMaker, String styleKey) {
 		this.tokenMaker = tokenMaker;
 		updateSyntaxHighlightingInformation();
 		this.syntaxStyle = styleKey;
 	}
+
+	// ------------------------
+	// ADDITIONS FOR DBVIS-9154
+	// ------------------------
 
 	/**
 	 * @return current {@link TokenMaker} or <code>null</code>
@@ -611,6 +613,7 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 		tokenMakerFactory = tmf!=null ? tmf :
 			TokenMakerFactory.getDefaultInstance();
 	}
+
 
 	/**
 	 * Loops through the last-tokens-on-lines array from a specified point

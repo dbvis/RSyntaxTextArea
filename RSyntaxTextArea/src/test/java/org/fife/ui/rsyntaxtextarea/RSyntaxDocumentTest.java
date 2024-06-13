@@ -469,6 +469,18 @@ class RSyntaxDocumentTest {
 
 	}
 
+	@Test
+	void testSetSyntaxStyle_CustomTokenMakerStyle() {
+
+		String noStyle = SyntaxConstants.SYNTAX_STYLE_NONE;
+		doc = new RSyntaxDocument(noStyle);
+		Assertions.assertEquals(noStyle, doc.getSyntaxStyle());
+
+		String htmlStyle = SyntaxConstants.SYNTAX_STYLE_HTML;
+		TokenMaker tokenMaker = new HTMLTokenMaker();
+		doc.setSyntaxStyle(tokenMaker, htmlStyle);
+		Assertions.assertEquals(htmlStyle, doc.getSyntaxStyle());
+	}
 
 	@Test
 	void testSetTokenMakerFactory() {
