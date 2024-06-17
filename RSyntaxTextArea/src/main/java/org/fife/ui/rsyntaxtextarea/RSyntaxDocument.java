@@ -590,27 +590,6 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 		this.syntaxStyle = styleKey;
 	}
 
-	// ------------------------
-	// ADDITIONS FOR DBVIS-9154
-	// ------------------------
-
-	/**
-	 * @return current {@link TokenMaker} or <code>null</code>
-	 */
-	public TokenMaker getTokenMaker() {
-		return tokenMaker;
-	}
-
-	/**
-	 * @return current {@link TokenMakerFactory} or <code>null</code>
-	 */
-	public TokenMakerFactory getTokenMakerFactory() {
-		return tokenMakerFactory;
-	}
-	// ----------------------------
-	// END ADDITIONS FOR DBVIS-9154
-	// ----------------------------
-
 	/**
 	 * Sets the token maker factory used by this document.
 	 *
