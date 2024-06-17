@@ -390,6 +390,14 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 		return syntaxStyle;
 	}
 
+	/**
+	 * Returns the {@link TokenMaker} being used.
+	 *
+	 * @return current {@link TokenMaker} (or <code>null</code>)
+	 */
+	public TokenMaker getTokenMaker() {
+		return tokenMaker;
+	}
 
 	/**
 	 * Returns a token list for the specified segment of text representing
