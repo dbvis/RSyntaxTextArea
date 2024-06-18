@@ -774,6 +774,12 @@ class RSyntaxTextAreaTest extends AbstractRSyntaxTextAreaTest {
 		RSyntaxTextArea textArea = createTextArea();
 		textArea.setSyntaxEditingStyle(null);
 		Assertions.assertEquals(SyntaxConstants.SYNTAX_STYLE_NONE, textArea.getSyntaxEditingStyle());
+
+		textArea.setSyntaxEditingStyle(null, null);
+		Assertions.assertEquals(SyntaxConstants.SYNTAX_STYLE_NONE, textArea.getSyntaxEditingStyle());
+		RSyntaxDocument doc = (RSyntaxDocument) textArea.getDocument();
+		Assertions.assertEquals(SyntaxConstants.SYNTAX_STYLE_NONE, doc.getSyntaxStyle());
+		Assertions.assertNotNull(doc.getTokenMaker());
 	}
 
 
