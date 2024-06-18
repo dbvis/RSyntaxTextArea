@@ -12,12 +12,11 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.event.HyperlinkEvent;
@@ -3072,6 +3071,36 @@ private boolean fractionalFontMetricsEnabled;
 
 	}
 
+	/**
+	 * Sets what type of syntax highlighting this editor is doing using a specific {@link TokenMaker}.
+	 * This method fires a property change of type {@link #SYNTAX_STYLE_PROPERTY}.
+	 * You should call this method if you've created a custom token maker for a language
+	 * not normally supported by <code>RSyntaxTextArea</code>.
+	 *
+	 * @param tokenMaker The new token maker to use.
+	 * @param styleKey  The new style to use, such as {@link SyntaxConstants#SYNTAX_STYLE_JAVA}.
+	 * @see #setSyntaxEditingStyle(String)
+	 * @see RSyntaxDocument#setSyntaxStyle(TokenMaker, String)
+	 * @see SyntaxConstants
+	 */
+	public void setSyntaxEditingStyle(TokenMaker tokenMaker, String styleKey) {
+		if (styleKey==null) {
+			styleKey = SYNTAX_STYLE_NONE;
+		}
+
+		if (!styleKey.equals(syntaxStyleKey)) {
+			String oldStyle = syntaxStyleKey;
+			syntaxStyleKey = styleKey;
+
+			RSyntaxDocument doc = (RSyntaxDocument)getDocument();
+			if (!(Objects.equals(styleKey, doc.getSyntaxStyle()) && Objects.equals(tokenMaker, doc.getTokenMaker()))) {
+				doc.setSyntaxStyle(tokenMaker, styleKey);
+			}
+
+			firePropertyChange(SYNTAX_STYLE_PROPERTY, oldStyle, styleKey);
+			setActiveLineRange(-1, -1);
+		}
+	}
 
 	/**
 	 * Sets all the colors used in syntax highlighting to the colors
