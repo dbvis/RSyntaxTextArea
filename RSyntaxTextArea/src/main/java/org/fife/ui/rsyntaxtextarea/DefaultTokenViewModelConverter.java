@@ -51,7 +51,7 @@ public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 
 		while (token != null && token.isPaintable()) {
 
-			fm = textArea.getFontMetricsForTokenType(token.getType());
+		        fm = textArea.getFontMetricsForToken(token);
 			char[] text = token.text;
 			int start = token.textOffset;
 			int end = start + token.textCount;
@@ -95,7 +95,7 @@ public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 
 		while (token != null && token.isPaintable()) {
 
-			fm = textArea.getFontMetricsForTokenType(token.getType());
+		        fm = textArea.getFontMetricsForToken(token);
 			if (fm == null) {
 				return rect; // Don't return null as things will error.
 			}

@@ -509,7 +509,7 @@ public class TokenImpl implements Token {
 	public int getOffsetBeforeX(RSyntaxTextArea textArea, TabExpander e,
 							float startX, float endBeforeX) {
 
-		FontMetrics fm = textArea.getFontMetricsForTokenType(getType());
+	        FontMetrics fm = textArea.getFontMetricsForToken(this);
 		int i = textOffset;
 		int stop = i + textCount;
 		float x = startX;
@@ -565,7 +565,7 @@ public class TokenImpl implements Token {
 	public float getWidthUpTo(int numChars, RSyntaxTextArea textArea,
 			TabExpander e, float x0) {
 		float width = x0;
-		FontMetrics fm = textArea.getFontMetricsForTokenType(getType());
+		FontMetrics fm = textArea.getFontMetricsForToken(this);
 		if (fm != null) {
 			int w;
 			int currentStart = textOffset;

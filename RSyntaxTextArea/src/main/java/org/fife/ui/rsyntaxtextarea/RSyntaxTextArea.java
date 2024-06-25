@@ -1183,6 +1183,17 @@ private boolean fractionalFontMetricsEnabled;
 	/**
 	 * Returns the font for tokens of the specified type.
 	 *
+	 * @param token the token.
+	 * @return The font to use for that token type.
+	 * @see #getFontMetricsForTokenType(int)
+	 */
+	public Font getFontForToken(Token token) {
+	        return getFontForTokenType(token.getType());
+	}
+
+	/**
+	 * Returns the font for tokens of the specified type.
+	 *
 	 * @param type The type of token.
 	 * @return The font to use for that token type.
 	 * @see #getFontMetricsForTokenType(int)
@@ -1192,6 +1203,16 @@ private boolean fractionalFontMetricsEnabled;
 		return f!=null ? f : getFont();
 	}
 
+	/**
+	 * Returns the font metrics for the given token.
+	 *
+	 * @param token the Token
+	 * @return The font metrics to use for that tokenx.
+	 * @see #getFontForTokenType(int)
+	 */
+	public FontMetrics getFontMetricsForToken(Token token) {
+	        return getFontMetricsForTokenType(token.getType());
+	}
 
 	/**
 	 * Returns the font metrics for tokens of the specified type.
@@ -1202,7 +1223,7 @@ private boolean fractionalFontMetricsEnabled;
 	 */
 	public FontMetrics getFontMetricsForTokenType(int type) {
 		FontMetrics fm = syntaxScheme.getStyle(type).fontMetrics;
-		return fm!=null ? fm : defaultFontMetrics;
+		return  fm!=null ? fm : defaultFontMetrics;
 	}
 
 
