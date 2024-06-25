@@ -133,7 +133,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 		while (token != null && token.isPaintable()) {
 
-			FontMetrics fm = textArea.getFontMetricsForTokenType(token.getType());
+			FontMetrics fm = textArea.getFontMetricsForToken(token);
 			if (fm == null) {
 				return rect; // Don't return null as things will error.
 			}

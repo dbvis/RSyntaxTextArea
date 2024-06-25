@@ -38,7 +38,7 @@ public class BufferedTokenViewModelConverter extends AbstractTokenViewModelConve
 
 	@Override
 	protected int getTokenListOffset() {
-		this.fm = textArea.getFontMetricsForTokenType(token.getType());
+		this.fm = textArea.getFontMetricsForToken(token);
 
 		// loop over text in token
 		int begin = token.textOffset;
