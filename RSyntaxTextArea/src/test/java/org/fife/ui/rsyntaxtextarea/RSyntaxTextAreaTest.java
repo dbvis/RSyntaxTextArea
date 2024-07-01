@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.Scanner;
 
 import org.fife.ui.SwingRunnerExtension;
+import org.fife.ui.rsyntaxtextarea.modes.HTMLTokenMaker;
 import org.fife.ui.rsyntaxtextarea.modes.JavaTokenMaker;
 import org.fife.ui.rsyntaxtextarea.parser.AbstractParser;
 import org.fife.ui.rsyntaxtextarea.parser.ParseResult;
@@ -710,6 +711,20 @@ class RSyntaxTextAreaTest extends AbstractRSyntaxTextAreaTest {
 		Assertions.assertEquals(SyntaxConstants.SYNTAX_STYLE_JAVA, textArea.getSyntaxEditingStyle());
 	}
 
+	@Test
+	void testSyntaxEditingStyleTokenMaker() {
+		RSyntaxTextArea textArea = new RSyntaxTextArea();
+
+		String noStyle = SyntaxConstants.SYNTAX_STYLE_NONE;
+		Assertions.assertEquals(noStyle, textArea.getSyntaxEditingStyle());
+		Assertions.assertEquals(noStyle, ((RSyntaxDocument)textArea.getDocument()).getSyntaxStyle());
+
+		String htmlStyle = SyntaxConstants.SYNTAX_STYLE_HTML;
+		TokenMaker tokenMaker = new HTMLTokenMaker();
+		textArea.setSyntaxEditingStyle(tokenMaker, htmlStyle);
+		Assertions.assertEquals(htmlStyle, textArea.getSyntaxEditingStyle());
+		Assertions.assertEquals(htmlStyle, ((RSyntaxDocument)textArea.getDocument()).getSyntaxStyle());
+	}
 
 	/**
 	 * In {@code RSyntaxTextArea}, the code path {@code setDocument()} ->
@@ -759,6 +774,12 @@ class RSyntaxTextAreaTest extends AbstractRSyntaxTextAreaTest {
 		RSyntaxTextArea textArea = createTextArea();
 		textArea.setSyntaxEditingStyle(null);
 		Assertions.assertEquals(SyntaxConstants.SYNTAX_STYLE_NONE, textArea.getSyntaxEditingStyle());
+
+		textArea.setSyntaxEditingStyle(null, null);
+		Assertions.assertEquals(SyntaxConstants.SYNTAX_STYLE_NONE, textArea.getSyntaxEditingStyle());
+		RSyntaxDocument doc = (RSyntaxDocument) textArea.getDocument();
+		Assertions.assertEquals(SyntaxConstants.SYNTAX_STYLE_NONE, doc.getSyntaxStyle());
+		Assertions.assertNotNull(doc.getTokenMaker());
 	}
 
 

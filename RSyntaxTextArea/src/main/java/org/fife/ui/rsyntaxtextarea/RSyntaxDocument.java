@@ -390,6 +390,14 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 		return syntaxStyle;
 	}
 
+	/**
+	 * Returns the {@link TokenMaker} being used.
+	 *
+	 * @return current {@link TokenMaker} (or <code>null</code>)
+	 */
+	public TokenMaker getTokenMaker() {
+		return tokenMaker;
+	}
 
 	/**
 	 * Returns a token list for the specified segment of text representing
@@ -567,6 +575,20 @@ public class RSyntaxDocument extends RDocument implements Iterable<Token>,
 		this.syntaxStyle = "text/unknown"; // TODO: Make me public?
 	}
 
+	/**
+	 * Sets the syntax style being used for syntax highlighting in this
+	 * document. You should call this method if you've created a custom token
+	 * maker for a language not normally supported by <code>RSyntaxTextArea</code>.
+	 *
+	 * @param tokenMaker The new token maker to use.
+	 * @param styleKey  The new style to use, such as {@link SyntaxConstants#SYNTAX_STYLE_JAVA}.
+	 * @see #setSyntaxStyle(TokenMaker)
+	 */
+	public void setSyntaxStyle(TokenMaker tokenMaker, String styleKey) {
+		this.tokenMaker = tokenMaker;
+		updateSyntaxHighlightingInformation();
+		this.syntaxStyle = styleKey;
+	}
 
 	/**
 	 * Sets the token maker factory used by this document.
