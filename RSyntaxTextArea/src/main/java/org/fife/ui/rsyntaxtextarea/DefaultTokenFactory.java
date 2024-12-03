@@ -31,7 +31,6 @@ import javax.swing.text.Segment;
 class DefaultTokenFactory implements TokenFactory {
 
 	private int size;
-	private int increment;
 	private TokenImpl[] tokenList;
 	private int currentFreeToken;
 
@@ -41,7 +40,7 @@ class DefaultTokenFactory implements TokenFactory {
 	 * Constructor.
 	 */
 	DefaultTokenFactory() {
-		this(DEFAULT_START_SIZE);
+		this(DEFAULT_START_SIZE); // 	// DBVIS-10096 no longer passes default increment
 	}
 
 
@@ -50,6 +49,7 @@ class DefaultTokenFactory implements TokenFactory {
 	 *
 	 * @param size The initial number of tokens in this factory.
 	 */
+	// DBVIS-10096 no longer takes increment
 	DefaultTokenFactory(int size) {
 
 		this.size = size;
@@ -69,6 +69,7 @@ class DefaultTokenFactory implements TokenFactory {
 	 * request is made and no more tokens are available.
 	 */
 	private void augmentTokenList() {
+		// DBVIS-10096 rewrote this method to grow size by doubling size rather than expand by 10 at a time.
 		int newSize = size * 2;
 		TokenImpl[] temp = new TokenImpl[newSize];
 		System.arraycopy(tokenList,0, temp,0, size);
