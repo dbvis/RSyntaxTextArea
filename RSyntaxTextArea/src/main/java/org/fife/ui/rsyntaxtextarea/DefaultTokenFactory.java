@@ -35,6 +35,7 @@ class DefaultTokenFactory implements TokenFactory {
 	private int currentFreeToken;
 
 	protected static final int DEFAULT_START_SIZE	= 30;
+	// DBVIS-10096 no longer has DEFAULT_INCREMENT
 
 	/**
 	 * Constructor.
