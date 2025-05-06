@@ -355,8 +355,9 @@ public class RTATextTransferHandler extends TransferHandler {
 
 		/**
 		 * Fetch the data in a text/plain format.
+		 * DBVIS-10977 -> public for subclass to override method exportDone
 		 */
-		protected String getPlainData() {
+		public String getPlainData() {
 			return plainData;
 		}
 
