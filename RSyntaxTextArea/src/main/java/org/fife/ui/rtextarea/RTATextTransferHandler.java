@@ -42,11 +42,12 @@ import javax.swing.text.Position;
 @SuppressWarnings("deprecation")
 public class RTATextTransferHandler extends TransferHandler {
 
-	private JTextComponent exportComp;
-	private boolean shouldRemove;
+	// DBVIS-10977 -> protected instance variables for subclass to override method exportDone
+	protected JTextComponent exportComp;
+	protected boolean shouldRemove;
 	private int p0;
 	private int p1;
-	private boolean withinSameComponent;
+	protected boolean withinSameComponent;
 
 
 	/**
@@ -328,8 +329,9 @@ public class RTATextTransferHandler extends TransferHandler {
 
 	/**
 	 * A possible implementation of the Transferable interface for RTextAreas.
+	 * DBVIS-10977 -> protected for subclass to override method exportDone
 	 */
-	static class TextTransferable implements Transferable {
+	protected static class TextTransferable implements Transferable {
 
 		private Position p0;
 		private Position p1;
