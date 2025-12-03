@@ -298,7 +298,7 @@ public class DtdTokenMaker extends AbstractJFlexTokenMaker {
 
 	/**
 	 * Token type specific to XMLTokenMaker denoting a line ending with an
-	 * unclosed XML tag; thus a new line is beginning still inside of the tag.
+	 * unclosed XML tag; thus a new line is beginning still inside the tag.
 	 */
 	public static final int INTERNAL_INTAG_START					= -1;
 
@@ -431,7 +431,7 @@ public class DtdTokenMaker extends AbstractJFlexTokenMaker {
 		prevState = YYINITIAL;
 
 		// Start off in the proper state.
-		int state = YYINITIAL;
+		int state;
 		switch (initialTokenType) {
 			case INTERNAL_INTAG_START:
 				state = INTAG_START;
@@ -453,7 +453,7 @@ public class DtdTokenMaker extends AbstractJFlexTokenMaker {
 					}
 					prevState = -initialTokenType&0xff;
 				}
-				else { // Shouldn't happen
+				else {
 					state = YYINITIAL;
 				}
 		}

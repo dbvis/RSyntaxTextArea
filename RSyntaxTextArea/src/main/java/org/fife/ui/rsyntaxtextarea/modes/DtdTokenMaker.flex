@@ -64,7 +64,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 
 	/**
 	 * Token type specific to XMLTokenMaker denoting a line ending with an
-	 * unclosed XML tag; thus a new line is beginning still inside of the tag.
+	 * unclosed XML tag; thus a new line is beginning still inside the tag.
 	 */
 	public static final int INTERNAL_INTAG_START					= -1;
 
@@ -196,7 +196,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 		prevState = YYINITIAL;
 
 		// Start off in the proper state.
-		int state = YYINITIAL;
+		int state;
 		switch (initialTokenType) {
 			case INTERNAL_INTAG_START:
 				state = INTAG_START;
@@ -218,7 +218,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 					}
 					prevState = -initialTokenType&0xff;
 				}
-				else { // Shouldn't happen
+				else {
 					state = YYINITIAL;
 				}
 		}

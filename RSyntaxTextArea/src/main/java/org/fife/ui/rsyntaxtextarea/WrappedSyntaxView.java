@@ -39,6 +39,8 @@ import org.fife.ui.rsyntaxtextarea.folding.FoldManager;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.util.SwingUtils;
 
+import static org.fife.ui.rsyntaxtextarea.SyntaxView.EOL_MARKER;
+
 
 /**
  * The view used by {@link RSyntaxTextArea} when word wrap is enabled.
@@ -277,14 +279,9 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 
 		} // End of while (token!=null && token.isPaintable()).
 
-		// NOTE: We should re-use code from Token (paintBackground()) here,
-		// but don't because I'm just too lazy.
 		if (host.getEOLMarkersVisible()) {
-			g.setColor(host.getForegroundForTokenType(Token.WHITESPACE));
-			g.setFont(host.getFontForTokenType(Token.WHITESPACE));
-			g.drawString("\u00B6", x, (float) y-fontHeight);
+			SyntaxView.drawEOLMarker(host, g, x, (float) y-fontHeight);
 		}
-
 	}
 
 
@@ -341,65 +338,8 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 			h.paintLayeredHighlights(g, p0,p, r, host, this);
 
 			while (token!=null && token.isPaintable() && token.getEndOffset()-1<p) {//<=p) {
-
-				// Selection starts in this token
-				if (token.containsPosition(selStart)) {
-
-
-					if (selStart>token.getOffset()) {
-						tempToken.copyFrom(token);
-						tempToken.textCount = selStart - tempToken.getOffset();
-						x = painter.paint(tempToken,g,x,y,host, this);
-						tempToken.textCount = token.length();
-						tempToken.makeStartAt(selStart);
-						// Clone required since token and tempToken must be
-						// different tokens for else statement below
-						token = new TokenImpl(tempToken);
-					}
-
-					int selCount = Math.min(token.length(), selEnd-token.getOffset());
-					if (selCount==token.length()) {
-						x = painter.paintSelected(token, g, x,y, host, this,
-								useSTC);
-					}
-					else {
-						tempToken.copyFrom(token);
-						tempToken.textCount = selCount;
-						x = painter.paintSelected(tempToken, g, x,y, host, this,
-								useSTC);
-						tempToken.textCount = token.length();
-						tempToken.makeStartAt(token.getOffset() + selCount);
-						token = tempToken;
-						x = painter.paint(token, g, x,y, host, this);
-					}
-
-				}
-
-				// Selection ends in this token
-				else if (token.containsPosition(selEnd)) {
-					tempToken.copyFrom(token);
-					tempToken.textCount = selEnd - tempToken.getOffset();
-					x = painter.paintSelected(tempToken, g, x,y, host, this,
-							useSTC);
-					tempToken.textCount = token.length();
-					tempToken.makeStartAt(selEnd);
-					token = tempToken;
-					x = painter.paint(token, g, x,y, host, this);
-				}
-
-				// This token is entirely selected
-				else if (token.getOffset()>=selStart &&
-						token.getEndOffset()<=selEnd) {
-					x = painter.paintSelected(token, g, x,y, host, this,useSTC);
-				}
-
-				// This token is entirely unselected
-				else {
-					x = painter.paint(token, g, x,y, host, this);
-				}
-
+				x = SyntaxView.drawTokenWithSelection(painter, token, g, x, y, selStart, selEnd, host, this, 0);
 				token = token.getNextToken();
-
 			}
 
 			// If there's a token that's going to be split onto the next line
@@ -480,14 +420,9 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 
 		} // End of while (token!=null && token.isPaintable()).
 
-		// NOTE: We should re-use code from Token (paintBackground()) here,
-		// but don't because I'm just too lazy.
 		if (host.getEOLMarkersVisible()) {
-			g.setColor(host.getForegroundForTokenType(Token.WHITESPACE));
-			g.setFont(host.getFontForTokenType(Token.WHITESPACE));
-			g.drawString("\u00B6", x, (float) y-fontHeight);
+			SyntaxView.drawEOLMarker(host, g, x, (float) y-fontHeight);
 		}
-
 	}
 
 
@@ -550,6 +485,17 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 
 
 	/**
+	 * Returns the width of the EOL marker when it is rendered.
+	 *
+	 * @param textArea The text area being rendered.
+	 * @return The width of the EOL marker.
+	 */
+	private float getEOLMarkerWidth(RSyntaxTextArea textArea) {
+		return metrics.stringWidth(EOL_MARKER);
+	}
+
+
+	/**
 	 * Determines the maximum span for this view along an
 	 * axis.  This is implemented to provide the superclass
 	 * behavior after first making sure that the current font
@@ -559,7 +505,7 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 	 *
 	 * @param axis may be either View.X_AXIS or View.Y_AXIS
 	 * @return  the span the view would like to be rendered into.
-	 *           Typically the view is told to render into the span
+	 *           Typically, the view is told to render into the span
 	 *           that is returned, although there is no guarantee.
 	 *           The parent may choose to resize or break the view.
 	 * @see View#getMaximumSpan
@@ -569,7 +515,7 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 		updateMetrics();
 		float span = super.getPreferredSpan(axis);
 		if (axis==View.X_AXIS) { // EOL marker
-			span += metrics.charWidth('\u00b6'); // metrics set in updateMetrics
+			span += getEOLMarkerWidth(host);
 		}
 		return span;
 	}
@@ -585,7 +531,7 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 	 *
 	 * @param axis may be either View.X_AXIS or View.Y_AXIS
 	 * @return  the span the view would like to be rendered into.
-	 *           Typically the view is told to render into the span
+	 *           Typically, the view is told to render into the span
 	 *           that is returned, although there is no guarantee.
 	 *           The parent may choose to resize or break the view.
 	 * @see View#getMinimumSpan
@@ -595,7 +541,7 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 		updateMetrics();
 		float span = super.getPreferredSpan(axis);
 		if (axis==View.X_AXIS) { // EOL marker
-			span += metrics.charWidth('\u00b6'); // metrics set in updateMetrics
+			span += getEOLMarkerWidth(host);
 		}
 		return span;
 	}
@@ -611,7 +557,7 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 	 *
 	 * @param axis may be either View.X_AXIS or View.Y_AXIS
 	 * @return  the span the view would like to be rendered into.
-	 *           Typically the view is told to render into the span
+	 *           Typically, the view is told to render into the span
 	 *           that is returned, although there is no guarantee.
 	 *           The parent may choose to resize or break the view.
 	 * @see View#getPreferredSpan
@@ -622,7 +568,7 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 		float span;
 		if (axis==View.X_AXIS) { // Add EOL marker
 			span = super.getPreferredSpan(axis);
-			span += metrics.charWidth('\u00b6'); // metrics set in updateMetrics
+			span += getEOLMarkerWidth(host);
 		}
 		else {
 			span = super.getPreferredSpan(axis);
@@ -745,14 +691,14 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 
 		boolean isBackward = (b == Position.Bias.Backward);
 		int testPos = (isBackward) ? Math.max(0, pos - 1) : pos;
-		if(isBackward && testPos < getStartOffset()) {
+		if (isBackward && testPos < getStartOffset()) {
 			return null;
 		}
 
 		int vIndex = getViewIndexAtPosition(testPos);
 		if ((vIndex != -1) && (vIndex < getViewCount())) {
 			View v = getView(vIndex);
-			if(v != null && testPos >= v.getStartOffset() &&
+			if (v != null && testPos >= v.getStartOffset() &&
 					testPos < v.getEndOffset()) {
 				Shape childShape = getChildAllocation(vIndex, a);
 				if (childShape == null) {
@@ -760,8 +706,8 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 					return null;
 				}
 				Shape retShape = v.modelToView(pos, childShape, b);
-				if(retShape == null && v.getEndOffset() == pos) {
-					if(++vIndex < getViewCount()) {
+				if (retShape == null && v.getEndOffset() == pos) {
+					if (++vIndex < getViewCount()) {
 						v = getView(vIndex);
 						retShape = v.modelToView(pos, getChildAllocation(vIndex, a), b);
 					}
@@ -1206,7 +1152,7 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 			} catch (BadLocationException ble) {
 				ble.printStackTrace();
 			}
-			System.err.println(">>> >>> calculated # of lines for this view (" + line + "/" + numLines + ": " + nlines);
+			//System.err.println(">> >> calculated # of lines for this view (" + line + "/" + numLines + ": " + nlines);
 			*/
 			return nlines;
 		}
@@ -1217,7 +1163,7 @@ public class WrappedSyntaxView extends BoxView implements TabExpander,
 		 *
 		 * @param axis may be either X_AXIS or Y_AXIS
 		 * @return   the span the view would like to be rendered into.
-		 *           Typically the view is told to render into the span
+		 *           Typically, the view is told to render into the span
 		 *           that is returned, although there is no guarantee.
 		 *           The parent may choose to resize or break the view.
 		 * @see View#getPreferredSpan

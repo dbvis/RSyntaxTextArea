@@ -80,7 +80,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 
 	/**
 	 * Token type specific to HtaccessTokenMaker denoting a line ending with an
-	 * unclosed XML tag; thus a new line is beginning still inside of the tag.
+	 * unclosed XML tag; thus a new line is beginning still inside the tag.
 	 */
 	public static final int INTERNAL_INTAG					= -3;
 
@@ -182,7 +182,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 		this.offsetShift = -text.offset + startOffset;
 
 		// Start off in the proper state.
-		int state = YYINITIAL;
+		int state;
 		switch (initialTokenType) {
 			case INTERNAL_ATTR_DOUBLE:
 				state = INATTR_DOUBLE;

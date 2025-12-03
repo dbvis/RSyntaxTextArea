@@ -218,10 +218,17 @@ public class FocusableTip {
 	}
 
 
+	public boolean isVisible() {
+		return tipWindow != null && tipWindow.isVisible();
+	}
+
+
 	/**
 	 * Disposes of the focusable tip currently displayed, if any.
+	 *
+	 * @return Whether the window wsa open, and thus closed and disposed.
 	 */
-	public void possiblyDisposeOfTipWindow() {
+	public boolean possiblyDisposeOfTipWindow() {
 		if (tipWindow != null) {
 			tipWindow.dispose();
 			tipWindow = null;
@@ -229,7 +236,9 @@ public class FocusableTip {
 			tipVisibleBounds.setBounds(-1, -1, 0, 0);
 			lastText = null;
 			textArea.requestFocus();
+			return true;
 		}
+		return false;
 	}
 
 
@@ -277,7 +286,7 @@ public class FocusableTip {
 	 */
 	public void toolTipRequested(MouseEvent e, String text) {
 
-		if (text==null || text.length()==0) {
+		if (text==null || text.isEmpty()) {
 			possiblyDisposeOfTipWindow();
 			lastText = text;
 			return;
@@ -295,7 +304,7 @@ public class FocusableTip {
 	/**
 	 * Listens for events in a text area.
 	 */
-	private class TextAreaListener extends MouseInputAdapter implements
+	private final class TextAreaListener extends MouseInputAdapter implements
 			CaretListener, ComponentListener, FocusListener, KeyListener {
 
 		@Override
@@ -349,7 +358,7 @@ public class FocusableTip {
 			possiblyDisposeOfTipWindow();
 		}
 
-		public void install(JTextArea textArea) {
+		protected void install(JTextArea textArea) {
 			textArea.addCaretListener(this);
 			textArea.addComponentListener(this);
 			textArea.addFocusListener(this);
@@ -365,7 +374,7 @@ public class FocusableTip {
 			}
 			else if (e.getKeyCode()==KeyEvent.VK_F2) {
 				if (tipWindow!=null && !tipWindow.getFocusableWindowState()) {
-					tipWindow.actionPerformed(null);
+					tipWindow.actionPerformed();
 					e.consume(); // Don't do bookmarking stuff
 				}
 			}
@@ -392,7 +401,7 @@ public class FocusableTip {
 			}
 		}
 
-		public void uninstall() {
+		protected void uninstall() {
 			textArea.removeCaretListener(this);
 			textArea.removeComponentListener(this);
 			textArea.removeFocusListener(this);

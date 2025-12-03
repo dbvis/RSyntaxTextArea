@@ -117,7 +117,7 @@ class SizeGrip extends JPanel {
 	 *
 	 * @param ltr Whether the current component orientation is LTR.
 	 */
-	protected void possiblyFixCursor(boolean ltr) {
+	private void possiblyFixCursor(boolean ltr) {
 		int cursor = Cursor.NE_RESIZE_CURSOR;
 		if (ltr) {
 			cursor = Cursor.NW_RESIZE_CURSOR;
@@ -132,7 +132,7 @@ class SizeGrip extends JPanel {
 	 * Listens for mouse events on this panel and resizes the parent window
 	 * appropriately.
 	 */
-	private class MouseHandler extends MouseInputAdapter {
+	private final class MouseHandler extends MouseInputAdapter {
 
 		/*
 		 * NOTE: We use SwingUtilities.convertPointToScreen() instead of just using

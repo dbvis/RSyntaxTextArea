@@ -148,7 +148,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 		this.offsetShift = -text.offset + startOffset;
 
 		// Start off in the proper state.
-		int state = Token.NULL;
+		int state;
 		switch (initialTokenType) {
 			case Token.LITERAL_STRING_DOUBLE_QUOTE:
 				state = VERBATIMSTRING;
@@ -159,7 +159,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 				start = text.offset;
 				break;
 			default:
-				state = Token.NULL;
+				state = YYINITIAL;
 		}
 
 		s = text;
@@ -306,7 +306,7 @@ OperatorOrPunctuator					= ({OOPHelper1}|{OOPHelper2}|{OOPHelper3}|{OOPHelper4}|
 /* NOTE:  We distinguish between operators and separators (punctuators), but */
 /* the C# spec doesn't, so the stuff below isn't in the spec.                */
 Separator								= ([\{\}\[\]\(\)])
-Separator2							= ([,;])
+Separator2							= ([,;.])
 
 /* C.1.10 - Pre-processing Directives. */
 /* NOTE:  We don't do ALL of the PP stuff here as it's unnecessary  */

@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
  */
 class TokenIteratorTest {
 
-	private static final RSyntaxTextAreaEditorKit kit =
+	private static final RSyntaxTextAreaEditorKit KIT =
 			new RSyntaxTextAreaEditorKit();
 
 
@@ -85,6 +85,17 @@ class TokenIteratorTest {
 	}
 
 
+	@Test
+	void testRemove() {
+		Assertions.assertThrows(UnsupportedOperationException.class, () -> {
+			RSyntaxDocument doc = loadResource("TokenIteratorTest_JavaBasic.txt",
+				SyntaxConstants.SYNTAX_STYLE_JAVA);
+			TokenIterator iter = new TokenIterator(doc);
+			iter.remove();
+		});
+	}
+
+
 	/**
 	 * Loads a text resource from the classpath into an instance of
 	 * {@link RSyntaxDocument}.
@@ -99,7 +110,7 @@ class TokenIteratorTest {
 		RSyntaxDocument doc = new RSyntaxDocument(syntax);
 		BufferedReader r = new BufferedReader(new InputStreamReader(
 						getClass().getResourceAsStream(res)));
-		kit.read(r, doc, 0);
+		KIT.read(r, doc, 0);
 		r.close();
 		return doc;
 	}

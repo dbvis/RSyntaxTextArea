@@ -1,10 +1,7 @@
-import static org.gradle.api.JavaVersion.*
-
 ['base', 'jacoco', 'biz.aQute.bnd.builder', 'distribution', 'maven-publish', 'signing'].each { apply plugin: it }
 
-// We require building with JDK 8 or later.  We turn off doclint since our
-// generated *TokenMakers have horrible documentation (see https://github.com/jflex-de/jflex/issues/182)
-assert current().isJava8Compatible()
+// Turn off doclint since our generated *TokenMakers have horrible
+// documentation (see https://github.com/jflex-de/jflex/issues/182)
 allprojects {
 	tasks.withType(Javadoc) {
 		options.addStringOption('Xdoclint:none', '-quiet')
@@ -39,17 +36,17 @@ jar {
                 'Implementation-Version': version,
                 'Bundle-License': 'BSD-3-Clause',
                 // Not sure why Require-Capability is not being added by the osgi plugin...
-                'Require-Capability': 'osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=' + javaVersion + '))"')
+                'Require-Capability': 'osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.' + osgiRequiredCompatibility + '))"')
     }
 }
 test {
     testLogging {
         events 'failed' //, 'passed', 'skipped', 'standardOut', 'standardError'
 
-        showExceptions true
-        exceptionFormat 'full'
-        showCauses true
-        showStackTraces true
+        showExceptions = true
+        exceptionFormat = 'full'
+        showCauses = true
+        showStackTraces = true
 
         showStandardStreams = false
     }
@@ -63,8 +60,8 @@ publishing {
             url = isReleaseVersion ? releasesRepoUrl : snapshotsRepoUrl
             credentials { // Credentials usually kept in user's .gradle/gradle.properties
                 // We must defensively check for these properties so CI builds work
-                username = project.hasProperty('ossrhUsername') ? ossrhUsername : 'unknown'
-                password = project.hasProperty('ossrhPassword') ? ossrhPassword : 'unknown'
+                username = project.hasProperty('ossrhToken') ? ossrhToken : 'unknown'
+                password = project.hasProperty('ossrhTokenPassword') ? ossrhTokenPassword : 'unknown'
             }
         }
     }
@@ -112,7 +109,7 @@ publishing {
 
 signing {
     // Don't require signing for e.g. ./gradlew install
-    required { gradle.taskGraph.hasTask('publish') && isReleaseVersion }
+    required = { gradle.taskGraph.hasTask('publish') && isReleaseVersion }
     sign publishing.publications.maven
 }
 tasks.withType(Sign) {

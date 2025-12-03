@@ -1088,6 +1088,27 @@ public class Gutter extends JPanel {
 		}
 	}
 
+	/**
+	 * Adds a listener for the IconRowEvent posted after the Icon Row changes.
+	 *
+	 * @param   l       the listener to add
+	 * @see     #removeIconRowListener(IconRowListener)
+	 */
+	public void addIconRowListener(IconRowListener l) {
+		iconArea.addIconRowListener(l);
+	}
+
+	/**
+	 * Removes a listener previously added with <B>addIconRowListener()</B>.
+	 *
+	 * @param   l       the listener to remove
+	 * @see     #addIconRowListener(IconRowListener)
+	 */
+	public void removeIconRowListener(IconRowListener l) {
+		iconArea.removeIconRowListener(l);
+	}
+
+
 
 	/**
 	 * The border used by the gutter.
@@ -1153,7 +1174,7 @@ public class Gutter extends JPanel {
 	/**
 	 * Listens for the text area resizing.
 	 */
-	private class TextAreaListener extends ComponentAdapter
+	private final class TextAreaListener extends ComponentAdapter
 						implements DocumentListener, PropertyChangeListener,
 						ActiveLineRangeListener {
 
@@ -1204,7 +1225,7 @@ public class Gutter extends JPanel {
 			handleDocumentEvent(e);
 		}
 
-		public void install(RTextArea textArea) {
+		protected void install(RTextArea textArea) {
 			if (installed) {
 				uninstall();
 			}
@@ -1260,6 +1281,11 @@ public class Gutter extends JPanel {
 				if (newDoc != null) {
 					newDoc.addDocumentListener(this);
 				}
+				for (int i=0; i<getComponentCount(); i++) {
+					AbstractGutterComponent agc =
+						(AbstractGutterComponent)getComponent(i);
+					agc.handleDocumentUpdated(old, newDoc);
+				}
 			}
 
 		}
@@ -1269,7 +1295,7 @@ public class Gutter extends JPanel {
 			handleDocumentEvent(e);
 		}
 
-		public void uninstall() {
+		protected void uninstall() {
 			if (installed) {
 				textArea.removeComponentListener(this);
 				textArea.getDocument().removeDocumentListener(this);

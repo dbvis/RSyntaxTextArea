@@ -16,8 +16,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.*;
+import java.awt.font.TextAttribute;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
@@ -27,6 +33,13 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.Map;
+
+import org.fife.ui.rtextarea.FoldIndicatorStyle;
+import org.fife.ui.rtextarea.Gutter;
+import org.fife.ui.rtextarea.RTextScrollPane;
+import org.fife.ui.rtextarea.LineNumberFormatter;
+import org.fife.ui.rtextarea.LineNumberList;
 
 
 /**
@@ -101,9 +114,12 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 		JMenu menu = new JMenu("Language");
 		ButtonGroup bg = new ButtonGroup();
+		addSyntaxItem("None", "NoneExample.txt", SYNTAX_STYLE_NONE, bg, menu);
 		addSyntaxItem("6502 Assembler", "Assembler6502.txt", SYNTAX_STYLE_ASSEMBLER_6502, bg, menu);
 		addSyntaxItem("ActionScript", "ActionScriptExample.txt", SYNTAX_STYLE_ACTIONSCRIPT, bg, menu);
 		addSyntaxItem("C",    "CExample.txt", SYNTAX_STYLE_C, bg, menu);
+		addSyntaxItem("C#",    "CSharpExample.txt", SYNTAX_STYLE_CSHARP, bg, menu);
+		addSyntaxItem("Clojure",  "ClojureExample.txt", SYNTAX_STYLE_CLOJURE, bg, menu);
 		addSyntaxItem("CSS",  "CssExample.txt", SYNTAX_STYLE_CSS, bg, menu);
 		addSyntaxItem("Dockerfile", "DockerfileExample.txt", SYNTAX_STYLE_DOCKERFILE, bg, menu);
 		addSyntaxItem("Go", "GoExample.txt", SYNTAX_STYLE_GO, bg, menu);
@@ -130,6 +146,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		addSyntaxItem("Text Alignment",  "TextAlignmentExample.txt", SYNTAX_STYLE_NONE, bg, menu);
 		addSyntaxItem("Text Performance",  "TextPerformanceExample.txt", SYNTAX_STYLE_NONE, bg, menu);
 		addSyntaxItem("TypeScript", "TypeScriptExample.txt", SYNTAX_STYLE_TYPESCRIPT, bg, menu);
+		addSyntaxItem("VHDL", "VhdlExample.txt", SYNTAX_STYLE_VHDL, bg, menu);
 		addSyntaxItem("XML",  "XMLExample.txt", SYNTAX_STYLE_XML, bg, menu);
 		addSyntaxItem("YAML", "YamlExample.txt", SYNTAX_STYLE_YAML, bg, menu);
 		menu.addSeparator();
@@ -178,15 +195,25 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		menu.add(cbItem);
 		cbItem = new JCheckBoxMenuItem(new WordWrapAction());
 		menu.add(cbItem);
-		cbItem = new JCheckBoxMenuItem(new ToggleAntiAliasingAction());
-		cbItem.setSelected(true);
-		menu.add(cbItem);
 		cbItem = new JCheckBoxMenuItem(new MarkOccurrencesAction());
 		cbItem.setSelected(true);
 		menu.add(cbItem);
 		cbItem = new JCheckBoxMenuItem(new TabLinesAction());
 		menu.add(cbItem);
 		cbItem = new JCheckBoxMenuItem(new WhitespaceVisibleAction());
+		menu.add(cbItem);
+		mb.add(menu);
+
+		menu = new JMenu("Font");
+		cbItem = new JCheckBoxMenuItem(new ToggleAntiAliasingAction());
+		cbItem.setSelected(true);
+		menu.add(cbItem);
+		cbItem = new JCheckBoxMenuItem(new ToggleFractionalFontMetricsAction());
+		cbItem.setSelected(false);
+		menu.add(cbItem);
+		cbItem = new JCheckBoxMenuItem(new ToggleKerningAction());
+		menu.add(cbItem);
+		cbItem = new JCheckBoxMenuItem(new ToggleLigatureSupportAction());
 		menu.add(cbItem);
 		mb.add(menu);
 
@@ -634,7 +661,8 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 			InputStream in = getClass().
 				getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/" + xml);
 			try {
-				Theme theme = Theme.load(in);
+				// Keep the text area's font since it has our e.g. ligature hints
+				Theme theme = Theme.load(in, textArea.getFont());
 				theme.apply(textArea);
 			} catch (IOException ioe) {
 				ioe.printStackTrace();
@@ -650,11 +678,77 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 
 		ToggleAntiAliasingAction() {
 			putValue(NAME, "Anti-Aliasing");
+			int defaultModifier = getToolkit().getMenuShortcutKeyMask() | InputEvent.SHIFT_DOWN_MASK;
+			putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_A, defaultModifier));
 		}
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			textArea.setAntiAliasingEnabled(!textArea.getAntiAliasingEnabled());
+		}
+
+	}
+
+	/**
+	 * Toggles fractional font metrics (don't usually want to change this).
+	 */
+	private class ToggleFractionalFontMetricsAction extends AbstractAction {
+
+		ToggleFractionalFontMetricsAction() {
+			putValue(NAME, "Fractional Font Metrics");
+			int defaultModifier = getToolkit().getMenuShortcutKeyMask() | InputEvent.SHIFT_DOWN_MASK;
+			putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_F, defaultModifier));
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			textArea.setFractionalFontMetricsEnabled(!textArea.getFractionalFontMetricsEnabled());
+		}
+
+	}
+
+	/**
+	 * Toggles kerning. Note this can be slow on older JVMs (see XXX).
+	 */
+	private class ToggleKerningAction extends AbstractAction {
+
+		ToggleKerningAction() {
+			putValue(NAME, "Kerning");
+			int defaultModifier = getToolkit().getMenuShortcutKeyMask() | InputEvent.SHIFT_DOWN_MASK;
+			putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_1, defaultModifier));
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			Font font = textArea.getFont();
+			Integer prev = (Integer)font.getAttributes().get(TextAttribute.KERNING);
+			int toggledValue = TextAttribute.KERNING_ON.equals(prev) ? -1 : TextAttribute.KERNING_ON;
+			Map<TextAttribute, Object> attrs = new HashMap<>();
+			attrs.put(TextAttribute.KERNING, toggledValue);
+			textArea.setFont(font.deriveFont(attrs));
+		}
+
+	}
+
+	/**
+	 * Toggles kerning. Note this can be slow on older JVMs (see XXX).
+	 */
+	private class ToggleLigatureSupportAction extends AbstractAction {
+
+		ToggleLigatureSupportAction() {
+			putValue(NAME, "Ligature Support");
+			int defaultModifier = getToolkit().getMenuShortcutKeyMask() | InputEvent.SHIFT_DOWN_MASK;
+			putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_2, defaultModifier));
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			Font font = textArea.getFont();
+			Integer prev = (Integer)font.getAttributes().get(TextAttribute.LIGATURES);
+			int toggledValue = TextAttribute.LIGATURES_ON.equals(prev) ? -1 : TextAttribute.LIGATURES_ON;
+			Map<TextAttribute, Object> attrs = new HashMap<>();
+			attrs.put(TextAttribute.LIGATURES, toggledValue);
+			textArea.setFont(font.deriveFont(attrs));
 		}
 
 	}
@@ -730,7 +824,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 	/**
 	 * Formats line numbers into Hindu-Arabic numerals.
 	 */
-	private static class HinduArabicLineNumberFormatter implements LineNumberFormatter {
+	private static final class HinduArabicLineNumberFormatter implements LineNumberFormatter {
 		private static final String[] NUMERALS = {
 			"٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"
 		};

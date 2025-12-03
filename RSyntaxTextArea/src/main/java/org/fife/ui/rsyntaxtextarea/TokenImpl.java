@@ -149,7 +149,7 @@ public class TokenImpl implements Token {
 
 		SyntaxScheme colorScheme = textArea.getSyntaxScheme();
 		Style scheme = colorScheme.getStyle(getType());
-		Font font = textArea.getFontForTokenType(getType());//scheme.font;
+		Font font = textArea.getFontForTokenType(getType());
 
 		if (font.isBold()) {
 			sb.append("<b>");
@@ -168,8 +168,10 @@ public class TokenImpl implements Token {
 				sb.append(" face=\"").append(font.getFamily()).append('"');
 			}
 			if (!isWhitespace()) {
+				Color fg = scheme.foreground != null ?
+					scheme.foreground : textArea.getForeground();
 				sb.append(" color=\"").append(
-						getHTMLFormatForColor(scheme.foreground)).append('"');
+						HtmlUtil.getHexString(fg)).append('"');
 			}
 			sb.append('>');
 		}
@@ -322,6 +324,12 @@ public class TokenImpl implements Token {
 
 
 	@Override
+	public boolean endsWith(char ch) {
+		return textCount > 0 && text[textOffset + textCount - 1] == ch;
+	}
+
+
+	@Override
 	public boolean endsWith(char[] ch) {
 		if (ch==null || ch.length>textCount) {
 			return false;
@@ -360,34 +368,6 @@ public class TokenImpl implements Token {
 	@Override
 	public int getEndOffset() {
 		return offset + textCount;
-	}
-
-
-	/**
-	 * Returns a <code>String</code> of the form "#xxxxxx" good for use
-	 * in HTML, representing the given color.
-	 *
-	 * @param color The color to get a string for.
-	 * @return The HTML form of the color.  If <code>color</code> is
-	 *         <code>null</code>, <code>#000000</code> is returned.
-	 */
-	private static String getHTMLFormatForColor(Color color) {
-		if (color==null) {
-			return "black";
-		}
-		String hexRed = Integer.toHexString(color.getRed());
-		if (hexRed.length()==1) {
-			hexRed = "0" + hexRed;
-		}
-		String hexGreen = Integer.toHexString(color.getGreen());
-		if (hexGreen.length()==1) {
-			hexGreen = "0" + hexGreen;
-		}
-		String hexBlue = Integer.toHexString(color.getBlue());
-		if (hexBlue.length()==1) {
-			hexBlue = "0" + hexBlue;
-		}
-		return "#" + hexRed + hexGreen + hexBlue;
 	}
 
 
@@ -509,7 +489,7 @@ public class TokenImpl implements Token {
 	public int getOffsetBeforeX(RSyntaxTextArea textArea, TabExpander e,
 							float startX, float endBeforeX) {
 
-		FontMetrics fm = textArea.getFontMetricsForTokenType(getType());
+	        FontMetrics fm = textArea.getFontMetricsForToken(this);
 		int i = textOffset;
 		int stop = i + textCount;
 		float x = startX;
@@ -565,7 +545,7 @@ public class TokenImpl implements Token {
 	public float getWidthUpTo(int numChars, RSyntaxTextArea textArea,
 			TabExpander e, float x0) {
 		float width = x0;
-		FontMetrics fm = textArea.getFontMetricsForTokenType(getType());
+		FontMetrics fm = textArea.getFontMetricsForToken(this);
 		if (fm != null) {
 			int w;
 			int currentStart = textOffset;

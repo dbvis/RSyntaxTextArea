@@ -1,6 +1,7 @@
 # RSyntaxTextArea
 ![Java Build](https://github.com/bobbylight/RSyntaxTextArea/actions/workflows/gradle.yml/badge.svg)
 ![Java Build](https://github.com/bobbylight/RSyntaxTextArea/actions/workflows/codeql-analysis.yml/badge.svg)
+![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fifesoft/rsyntaxtextarea/badge.svg)
 [![codecov](https://codecov.io/gh/bobbylight/RSyntaxTextArea/branch/master/graph/badge.svg?token=Hktq3vfINy)](https://codecov.io/gh/bobbylight/RSyntaxTextArea)
 
 RSyntaxTextArea is a customizable, syntax highlighting text component for Java Swing applications.  Out of
@@ -24,8 +25,8 @@ all unit tests, and create the jar, run:
 
     ./gradlew build --warning-mode all
 
-RSTA 3.0 and newer requires Java 8 to compile and run.  If you need
-Java 6 compatibility, you'll need to use a 2.6.x version.
+RSTA 3.0 and newer requires Java 17 to compile, but runs on Java 8.
+If you need Java 6 compatibility, you'll need to use a 2.6.x version.
 
 # Demos
 

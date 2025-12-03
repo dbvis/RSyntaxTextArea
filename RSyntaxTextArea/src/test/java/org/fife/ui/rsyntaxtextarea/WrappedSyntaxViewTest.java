@@ -185,9 +185,8 @@ class WrappedSyntaxViewTest extends AbstractRSyntaxTextAreaTest {
 			getRootView(textArea).getView(0);
 
 		int offs = Integer.MAX_VALUE;
-		Assertions.assertThrows(BadLocationException.class, () -> {
-			view.modelToView(offs, textArea.getBounds(), Position.Bias.Backward);
-		});
+		Assertions.assertThrows(BadLocationException.class, () ->
+			view.modelToView(offs, textArea.getBounds(), Position.Bias.Backward));
 	}
 
 
@@ -217,18 +216,15 @@ class WrappedSyntaxViewTest extends AbstractRSyntaxTextAreaTest {
 
 	@Test
 	void testPaint_noSelection() {
-
 		RSyntaxTextArea textArea = createWrappingTextArea();
-
+		textArea.setEOLMarkersVisible(true);
 		textArea.paint(createTestGraphics(1000, 1000));
 	}
 
 
 	@Test
 	void testPaint_noSelection_wrapStyleWordFalse() {
-
 		RSyntaxTextArea textArea = createWrappingTextArea(false);
-
 		textArea.paint(createTestGraphics(1000, 1000));
 	}
 
@@ -253,6 +249,7 @@ class WrappedSyntaxViewTest extends AbstractRSyntaxTextAreaTest {
 	void testPaint_selection_startsInMiddleOfTokenAndSpansMultipleLines() {
 
 		RSyntaxTextArea textArea = createWrappingTextArea();
+		textArea.setEOLMarkersVisible(true);
 
 		// Create a multi-line selection that includes empty lines
 		// and starts in the middle of a token

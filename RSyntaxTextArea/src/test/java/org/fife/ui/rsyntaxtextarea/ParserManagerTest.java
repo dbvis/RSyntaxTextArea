@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeListener;
 
@@ -42,9 +43,19 @@ class ParserManagerTest extends AbstractRSyntaxTextAreaTest {
 
 
 	@Test
-	void testActionPerformed_parsersFireChangeEvents() {
+	void testActionPerformed_noParsers() {
 
-		boolean[] parserNoticeChangeEventFired = { false };
+		RSyntaxTextArea textArea = createTextArea();
+		ParserManager manager = new ParserManager(textArea);
+		Assertions.assertEquals(0, manager.getParserNotices().size());
+
+		manager.actionPerformed(new ActionEvent(textArea, 0, null));
+		Assertions.assertEquals(0, manager.getParserNotices().size());
+	}
+
+
+	@Test
+	void testActionPerformed_parsersFireChangeEvents() {
 
 		AbstractParser parser = new AbstractParser() {
 			@Override
@@ -55,16 +66,15 @@ class ParserManagerTest extends AbstractRSyntaxTextAreaTest {
 			}
 		};
 
+
 		RSyntaxTextArea textArea = createTextArea();
-		// Remove the fold parser so our test parser is the only one
-		textArea.setCodeFoldingEnabled(false);
-		textArea.addParser(parser);
-		PropertyChangeListener listener = evt -> parserNoticeChangeEventFired[0] = true;
-		textArea.addPropertyChangeListener(RSyntaxTextArea.PARSER_NOTICES_PROPERTY, listener);
+		ParserManager manager = new ParserManager(textArea);
+		manager.addParser(parser);
+		Assertions.assertEquals(0, manager.getParserNotices().size());
 
-		textArea.forceReparsing(parser);
-
-		Assertions.assertTrue(parserNoticeChangeEventFired[0]);
+		manager.actionPerformed(new ActionEvent(textArea, 0, null));
+		Assertions.assertEquals(1, manager.getParserNotices().size());
+		Assertions.assertEquals("test", manager.getParserNotices().get(0).getMessage());
 	}
 
 
@@ -92,6 +102,109 @@ class ParserManagerTest extends AbstractRSyntaxTextAreaTest {
 
 
 	@Test
+	void testClearParsers() {
+
+		AbstractParser parser = new AbstractParser() {
+			@Override
+			public ParseResult parse(RSyntaxDocument doc, String style) {
+				DefaultParseResult result = new DefaultParseResult(this);
+				result.addNotice(new DefaultParserNotice(this, "test", 1));
+				return result;
+			}
+		};
+
+
+		RSyntaxTextArea textArea = createTextArea();
+		ParserManager manager = new ParserManager(textArea);
+		manager.addParser(parser);
+		Assertions.assertEquals(1, manager.getParserCount());
+
+		manager.actionPerformed(new ActionEvent(textArea, 0, null));
+		Assertions.assertEquals(1, manager.getParserNotices().size());
+		Assertions.assertEquals("test", manager.getParserNotices().get(0).getMessage());
+
+		manager.clearParsers();
+		Assertions.assertEquals(0, manager.getParserNotices().size());
+		Assertions.assertEquals(0, manager.getParserCount());
+	}
+
+
+	@Test
+	void testForceReparsing_parsersFireChangeEvents() {
+
+		boolean[] parserNoticeChangeEventFired = { false };
+
+		AbstractParser parser = new AbstractParser() {
+			@Override
+			public ParseResult parse(RSyntaxDocument doc, String style) {
+				DefaultParseResult result = new DefaultParseResult(this);
+				result.addNotice(new DefaultParserNotice(this, "test", 1));
+				return result;
+			}
+		};
+
+		RSyntaxTextArea textArea = createTextArea();
+		// Remove the fold parser so our test parser is the only one
+		textArea.setCodeFoldingEnabled(false);
+		textArea.addParser(parser);
+		PropertyChangeListener listener = evt -> parserNoticeChangeEventFired[0] = true;
+		textArea.addPropertyChangeListener(RSyntaxTextArea.PARSER_NOTICES_PROPERTY, listener);
+
+		Assertions.assertTrue(textArea.forceReparsing(parser));
+
+		Assertions.assertTrue(parserNoticeChangeEventFired[0]);
+	}
+
+
+	@Test
+	void testForceReparsing_disabledParserClearsItsNotices() {
+
+		AbstractParser parser = new AbstractParser() {
+			@Override
+			public ParseResult parse(RSyntaxDocument doc, String style) {
+				DefaultParseResult result = new DefaultParseResult(this);
+				result.addNotice(new DefaultParserNotice(this, "test", 1));
+				return result;
+			}
+		};
+
+		RSyntaxTextArea textArea = createTextArea();
+		// Remove the fold parser so our test parser is the only one
+		textArea.setCodeFoldingEnabled(false);
+		textArea.addParser(parser);
+
+		// Initial run - adds notices to the text area.
+		Assertions.assertTrue(textArea.forceReparsing(parser));
+		Assertions.assertFalse(textArea.getParserNotices().isEmpty());
+
+		// After being disabled and rerun - clears notices from the text area.
+		parser.setEnabled(false);
+		Assertions.assertTrue(textArea.forceReparsing(parser));
+		Assertions.assertTrue(textArea.getParserNotices().isEmpty());
+
+	}
+
+
+	@Test
+	void testGetSetDelay() {
+
+		RSyntaxTextArea textArea = createTextArea();
+		ParserManager manager = new ParserManager(textArea);
+
+		manager.setDelay(12345);
+		Assertions.assertEquals(12345, manager.getDelay());
+
+		manager.restartParsing();
+		try {
+			manager.setDelay(54321);
+			Assertions.assertEquals(54321, manager.getDelay());
+		} finally {
+			manager.stopParsing();
+		}
+	}
+
+
+	@Test
 	void testGetToolTipText() {
 
 		AbstractParser parser = new AbstractParser() {
@@ -106,7 +219,7 @@ class ParserManagerTest extends AbstractRSyntaxTextAreaTest {
 		RSyntaxTextArea textArea = createTextArea();
 		textArea.addNotify();
 		textArea.setAntiAliasingEnabled(false); // Needed to initialize font metrics cache
-		RTextScrollPane sp = new RTextScrollPane(textArea); // text area needs a parent
+		new RTextScrollPane(textArea); // text area needs a parent
 		ParserManager manager = new ParserManager(textArea);
 		manager.addParser(parser);
 
@@ -119,11 +232,20 @@ class ParserManagerTest extends AbstractRSyntaxTextAreaTest {
 
 
 	@Test
+	void testInsertUpdate() {
+
+		RSyntaxTextArea textArea = createTextArea();
+		new ParserManager(textArea);
+
+		textArea.insert("inserted text", 5);
+	}
+
+
+	@Test
 	void testPropertyChange_document() {
 
 		RSyntaxTextArea textArea = createTextArea();
-		ParserManager manager = new ParserManager(textArea);
-
+		new ParserManager(textArea);
 		RSyntaxDocument origDocument = (RSyntaxDocument)textArea.getDocument();
 
 		RSyntaxDocument newDocument = new RSyntaxDocument(SyntaxConstants.SYNTAX_STYLE_C);
@@ -132,5 +254,15 @@ class ParserManagerTest extends AbstractRSyntaxTextAreaTest {
 		// All we can really verify is that the original document has had the parser's
 		// listener removed (along with all others)
 		Assertions.assertEquals(0, origDocument.getDocumentListeners().length);
+	}
+
+
+	@Test
+	void testRemoveUpdate() {
+
+		RSyntaxTextArea textArea = createTextArea();
+		new ParserManager(textArea);
+
+		textArea.replaceRange("", 5, 9);
 	}
 }

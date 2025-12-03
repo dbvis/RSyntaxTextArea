@@ -21,7 +21,6 @@ import java.lang.reflect.Field;
 
 import javax.swing.UIManager;
 import javax.swing.plaf.ColorUIResource;
-import javax.swing.text.StyleContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.SAXParser;
@@ -33,6 +32,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.fife.io.UnicodeWriter;
+import org.fife.ui.rtextarea.FontUtil;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextArea;
 import org.w3c.dom.DOMImplementation;
@@ -222,11 +222,10 @@ public class Theme {
 			gutter.setIconRowHeaderInheritsGutterBackground(iconRowHeaderInheritsGutterBG);
 			gutter.setLineNumberColor(lineNumberColor);
 			gutter.setCurrentLineNumberColor(currentLineNumberColor);
-			String fontName = lineNumberFont!=null ? lineNumberFont :
-				baseFont.getFamily();
-			int fontSize = lineNumberFontSize>0 ? lineNumberFontSize :
-				baseFont.getSize();
-			Font font = getFont(fontName, Font.PLAIN, fontSize);
+			String lineNumberFontFamily = lineNumberFont;
+			Number lineNumberFontSize = this.lineNumberFontSize > 0 ?
+				this.lineNumberFontSize : null;
+			Font font = FontUtil.deriveFont(baseFont, lineNumberFontFamily, null, lineNumberFontSize);
 			gutter.setLineNumberFont(font);
 			gutter.setFoldIndicatorForeground(foldIndicatorFG);
 			gutter.setFoldIndicatorArmedForeground(foldIndicatorArmedFG);
@@ -311,21 +310,6 @@ public class Theme {
 			}
 		}
 		return c;
-	}
-
-
-	/**
-	 * Returns the specified font.
-	 *
-	 * @param family The font family.
-	 * @param style The style of font.
-	 * @param size The size of the font.
-	 * @return The font.
-	 */
-	private static Font getFont(String family, int style, int size) {
-		// Use StyleContext to get a composite font for Asian glyphs.
-		StyleContext sc = StyleContext.getDefaultStyleContext();
-		return sc.getFont(family, style, size);
 	}
 
 
@@ -611,7 +595,7 @@ public class Theme {
 	/**
 	 * Loads a <code>SyntaxScheme</code> from an XML file.
 	 */
-	private static class XmlHandler extends DefaultHandler {
+	private static final class XmlHandler extends DefaultHandler {
 
 		private Theme theme;
 
@@ -686,19 +670,10 @@ public class Theme {
 
 			// The base font to use in the editor.
 			else if ("baseFont".equals(qName)) {
-				int size = theme.baseFont.getSize();
 				String sizeStr = attrs.getValue("size");
-				if (sizeStr!=null) {
-					size = Integer.parseInt(sizeStr);
-				}
+				Integer size = sizeStr != null ? Integer.parseInt(sizeStr) : null;
 				String family = attrs.getValue("family");
-				if (family!=null) {
-					theme.baseFont = getFont(family, Font.PLAIN, size);
-				}
-				else if (sizeStr!=null) {
-					// No family specified, keep original family
-					theme.baseFont = theme.baseFont.deriveFont(size*1f);
-				}
+				theme.baseFont = FontUtil.deriveFont(theme.baseFont, family, null, size);
 			}
 
 			else if ("caret".equals(qName)) {
@@ -835,8 +810,8 @@ public class Theme {
 					field = Token.class.getField(type);
 				} catch (RuntimeException re) {
 					throw re; // FindBugs
-				} catch (Exception e) {
-					System.err.println("Invalid token type: " + type);
+				} catch (NoSuchFieldException e) {
+					e.printStackTrace();
 					return;
 				}
 
@@ -858,12 +833,8 @@ public class Theme {
 					Color bg = stringToColor(bgStr);
 					theme.scheme.getStyle(index).background = bg;
 
-					Font font = theme.baseFont;
 					String familyName = attrs.getValue("fontFamily");
-					if (familyName!=null) {
-						font = getFont(familyName, font.getStyle(),
-								font.getSize());
-					}
+					Font font = FontUtil.deriveFont(theme.baseFont, familyName);
 					String sizeStr = attrs.getValue("fontSize");
 					if (sizeStr!=null) {
 						try {

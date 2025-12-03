@@ -1,8 +1,4 @@
 /*
- * 02/11/2009
- *
- * LineNumberList.java - Renders line numbers in an RTextScrollPane.
- *
  * This library is distributed under a modified BSD license.  See the included
  * LICENSE file for details.
  */
@@ -254,6 +250,15 @@ public class LineNumberList extends AbstractGutterComponent
 	}
 
 
+	/**
+	 * Overridden to update the width of this component.
+	 */
+	@Override
+	void handleDocumentUpdated(RDocument oldDoc, RDocument newDoc) {
+		updateCellWidths();
+	}
+
+
 	@Override
 	protected void init() {
 
@@ -497,7 +502,7 @@ public class LineNumberList extends AbstractGutterComponent
 		//   above the first visible y-coordinate as we're in line-wrapping
 		//   mode, but we always paint entire logical lines.
 		// - Paint that line's line number and highlight, if appropriate.
-		//   Increment y to be just below the are we just painted (i.e., the
+		//   Increment y to be just below the area we just painted (i.e., the
 		//   beginning of the next logical line's view area).
 		// - Get the ending visual position for that line.  We can now loop
 		//   back, paint this line, and continue until our y-coordinate is
@@ -579,8 +584,7 @@ public class LineNumberList extends AbstractGutterComponent
 				g.drawString(number, rhs-strWidth,y+ascent);
 			}
 			else {
-				int x = rhsBorderWidth;
-				g.drawString(number, x, y+ascent);
+				g.drawString(number, rhsBorderWidth, y+ascent);
 			}
 
 			// The next possible y-coordinate is just after the last line
@@ -772,7 +776,7 @@ public class LineNumberList extends AbstractGutterComponent
 	/**
 	 * Listens for events in the text area we're interested in.
 	 */
-	private class Listener implements CaretListener, PropertyChangeListener {
+	private final class Listener implements CaretListener, PropertyChangeListener {
 
 		private boolean installed;
 
@@ -849,7 +853,7 @@ public class LineNumberList extends AbstractGutterComponent
 	}
 
 
-	private static class SimpleLineNumberFormatter implements LineNumberFormatter {
+	private static final class SimpleLineNumberFormatter implements LineNumberFormatter {
 		@Override
 		public String format(int lineNumber) {
 			return Integer.toString(lineNumber);

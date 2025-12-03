@@ -1,8 +1,4 @@
 /*
- * 02/11/2008
- *
- * JSPTokenMaker.java - Generates tokens for JSP syntax highlighting.
- * 
  * This library is distributed under a modified BSD license.  See the included
  * LICENSE file for details.
  */
@@ -80,7 +76,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 	/**
 	 * Token type specific to JSPTokenMaker; this signals that the user has
 	 * ended a line with an unclosed HTML tag; thus a new line is beginning
-	 * still inside of the tag.
+	 * still inside the tag.
 	 */
 	static final int INTERNAL_INTAG					= -3;
 
@@ -123,13 +119,13 @@ import org.fife.ui.rsyntaxtextarea.*;
 	/**
 	 * Token type specifying we're in a JSP hidden comment ("<%-- ... --%>").
 	 */
-	private static final int INTERNAL_IN_HIDDEN_COMMENT		= -10;
+	static final int INTERNAL_IN_HIDDEN_COMMENT		= -10;
 
 	/**
 	 * Token type specifying we're in a JSP directive (either include, page
 	 * or taglib).
 	 */
-	private static final int INTERNAL_IN_JSP_DIRECTIVE			= -11;
+	static final int INTERNAL_IN_JSP_DIRECTIVE			= -11;
 
 	/**
 	 * Token type specifying we're in JavaScript.
@@ -413,7 +409,7 @@ import org.fife.ui.rsyntaxtextarea.*;
 		int languageIndex = 0;
 
 		// Start off in the proper state.
-		int state = Token.NULL;
+		int state;
 		switch (initialTokenType) {
 			case Token.MARKUP_COMMENT:
 				state = COMMENT;
@@ -837,7 +833,6 @@ CSS_Number					= ({CSS_Digits}|{CSS_Hex})
 
 <COMMENT> {
 	[^hwf\n\-]+				{}
-	{URL}					{ int temp=zzStartRead; addToken(start,zzStartRead-1, Token.MARKUP_COMMENT); addHyperlinkToken(temp,zzMarkedPos-1, Token.MARKUP_COMMENT); start = zzMarkedPos; }
 	{URL}					{
                                 int temp = zzStartRead;
                                 if (start <= zzStartRead - 1) {
@@ -1660,6 +1655,8 @@ CSS_Number					= ({CSS_Digits}|{CSS_Hex})
     "FilenameFilter" |
     "Flushable" |
     "ObjectInput" |
+    "ObjectInputFilter" |
+    "ObjectInputFilter.FilterInfo" |
     "ObjectInputValidation" |
     "ObjectOutput" |
     "ObjectStreamConstants" |
@@ -1691,6 +1688,7 @@ CSS_Number					= ({CSS_Digits}|{CSS_Hex})
     "InputStreamReader" |
     "LineNumberInputStream" |
     "LineNumberReader" |
+    "ObjectInputFilter.Config" |
     "ObjectInputStream" |
     "ObjectInputStream.GetField" |
     "ObjectOutputStream" |
@@ -1736,6 +1734,8 @@ CSS_Number					= ({CSS_Digits}|{CSS_Hex})
     "WriteAbortedException" |
 
     "IOError" |
+
+    "Serial" |
 
 	/* java.util classes */
     "Collection" |

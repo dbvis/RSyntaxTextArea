@@ -43,8 +43,8 @@ class SearchEngineTest {
 	/**
 	 * Asserts that two strings are equal, ignoring case.
 	 *
-	 * @param expected
-	 * @param actual
+	 * @param expected The expected value.
+	 * @param actual The actual value.
 	 */
 	private void assertEqualsIgnoreCase(String expected, String actual) {
 		expected = expected != null ? expected.toLowerCase() : null;
@@ -68,9 +68,9 @@ class SearchEngineTest {
 	 * Asserts that the text area's selection is at the expected location and
 	 * has the expected value.
 	 *
-	 * @param expected
-	 * @param offs
-	 * @param matchCase
+	 * @param expected The expected value.
+	 * @param offs The offset.
+	 * @param matchCase Whether to match case.
 	 */
 	private void assertSelected(String expected, int offs, boolean matchCase) {
 		String actual = textArea.getSelectedText();
@@ -528,7 +528,8 @@ class SearchEngineTest {
 
 
 	/**
-	 * https://github.com/bobbylight/RSyntaxTextArea/issues/38
+	 * Verifies the fix for bug
+	 * <a href="https://github.com/bobbylight/RSyntaxTextArea/issues/38">38</a>.
 	 */
 	@Test
 	void testSearchEngineRegexFindEmptyString() {
@@ -689,7 +690,8 @@ class SearchEngineTest {
 		// Search for "chuck", ignoring case.
 		context.setSearchFor("chuck");
 		textArea.setText(text);
-		String expected = textArea.getText().replaceAll("(?i:" + context.getSearchFor() +  ")", context.getReplaceWith());
+		String expected = textArea.getText().replaceAll("(?i:" + context.getSearchFor() +  ")",
+			context.getReplaceWith());
 		textArea.setCaretPosition(offs);
 		boolean found = replaceImpl(context);
 		assertTrue(found);
@@ -830,7 +832,8 @@ class SearchEngineTest {
 	}
 
 	/**
-	 * https://github.com/bobbylight/RSyntaxTextArea/issues/427
+	 * Verifies the fix for bug
+	 * <a href="https://github.com/bobbylight/RSyntaxTextArea/issues/427>427</a>.
 	 */
 	@Test
 	void testSearchEngineReplaceBackwardOnEmptyDocument() {
@@ -958,7 +961,8 @@ class SearchEngineTest {
 		// Replace "chuck", ignoring case.
 		context.setSearchFor("chuck");
 		textArea.setText(text);
-		String expected = textArea.getText().replaceAll("(?i:" + context.getSearchFor() +  ")", context.getReplaceWith());
+		String expected = textArea.getText().replaceAll("(?i:" + context.getSearchFor() +  ")",
+			context.getReplaceWith());
 		int count = replaceAllImpl(context);
 		assertEquals(4, count);
 		assertEquals(expected, textArea.getText());

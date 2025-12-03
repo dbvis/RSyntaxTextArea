@@ -8,11 +8,15 @@ package org.fife.ui.rsyntaxtextarea;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.font.TextAttribute;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.fife.ui.rtextarea.FontUtil;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.junit.jupiter.api.Assertions;
@@ -49,7 +53,8 @@ class ThemeTest {
 		Assertions.assertNotEquals(textArea1.getMarginLineColor(), textArea2.getMarginLineColor());
 		Assertions.assertNotEquals(textArea1.getMarkAllHighlightColor(), textArea2.getMarkAllHighlightColor());
 		Assertions.assertNotEquals(textArea1.getMarkOccurrencesColor(), textArea2.getMarkOccurrencesColor());
-		Assertions.assertNotEquals(textArea1.getPaintMarkOccurrencesBorder(), textArea2.getPaintMarkOccurrencesBorder());
+		Assertions.assertNotEquals(textArea1.getPaintMarkOccurrencesBorder(),
+			textArea2.getPaintMarkOccurrencesBorder());
 		Assertions.assertNotEquals(textArea1.getMatchedBracketBGColor(), textArea2.getMatchedBracketBGColor());
 		Assertions.assertNotEquals(textArea1.getMatchedBracketBorderColor(), textArea2.getMatchedBracketBorderColor());
 		Assertions.assertNotEquals(textArea1.getPaintMatchedBracketPair(), textArea2.getPaintMatchedBracketPair());
@@ -62,7 +67,8 @@ class ThemeTest {
 		Assertions.assertNotEquals(gutter1.getBackground(), gutter2.getBackground());
 		Assertions.assertNotEquals(gutter1.getBorderColor(), gutter2.getBorderColor());
 		Assertions.assertNotEquals(gutter1.getActiveLineRangeColor(), gutter2.getActiveLineRangeColor());
-		Assertions.assertNotEquals(gutter1.getIconRowHeaderInheritsGutterBackground(), gutter2.getIconRowHeaderInheritsGutterBackground());
+		Assertions.assertNotEquals(gutter1.getIconRowHeaderInheritsGutterBackground(),
+			gutter2.getIconRowHeaderInheritsGutterBackground());
 		Assertions.assertNotEquals(gutter1.getLineNumberColor(), gutter2.getLineNumberColor());
 		Assertions.assertNotEquals(gutter1.getLineNumberFont(), gutter2.getLineNumberFont());
 		Assertions.assertNotEquals(gutter1.getCurrentLineNumberColor(), gutter2.getCurrentLineNumberColor());
@@ -239,7 +245,8 @@ class ThemeTest {
 		Assertions.assertEquals(gutter1.getBackground(), gutter2.getBackground());
 		Assertions.assertEquals(gutter1.getBorderColor(), gutter2.getBorderColor());
 		Assertions.assertEquals(gutter1.getActiveLineRangeColor(), gutter2.getActiveLineRangeColor());
-		Assertions.assertEquals(gutter1.getIconRowHeaderInheritsGutterBackground(), gutter2.getIconRowHeaderInheritsGutterBackground());
+		Assertions.assertEquals(gutter1.getIconRowHeaderInheritsGutterBackground(),
+			gutter2.getIconRowHeaderInheritsGutterBackground());
 		Assertions.assertEquals(gutter1.getLineNumberColor(), gutter2.getLineNumberColor());
 		Assertions.assertEquals(gutter1.getCurrentLineNumberColor(), gutter2.getCurrentLineNumberColor());
 		Assertions.assertEquals(gutter1.getLineNumberFont(), gutter2.getLineNumberFont());
@@ -289,7 +296,7 @@ class ThemeTest {
 	private void initWithOddProperties(RSyntaxTextArea textArea,
 			Gutter gutter) {
 
-		Font font = new Font("Dialog", Font.PLAIN, 13);
+		Font font = new Font(Font.DIALOG, Font.PLAIN, 13);
 		textArea.setFont(font);
 		textArea.setSyntaxScheme(createSyntaxScheme(font, Color.orange));
 		textArea.setBackground(Color.orange);
@@ -329,19 +336,19 @@ class ThemeTest {
 	}
 
 
-/*
 	@Test
-	public void testConstructor_TextAreaArg() {
+	void testConstructor_textAreaArg() {
 
 		RSyntaxTextArea textArea = new RSyntaxTextArea(
 				SyntaxConstants.SYNTAX_STYLE_JAVA);
-		Font font = new Font("Dialog", Font.PLAIN, 13);
+		Font font = new Font(Font.DIALOG, Font.PLAIN, 13);
 		textArea.setFont(font);
 
 		Theme theme = new Theme(textArea);
-
+		Assertions.assertEquals(textArea.getSyntaxScheme(), theme.scheme);
+		Assertions.assertEquals(textArea.getBackground(), theme.bgColor);
+		Assertions.assertEquals(textArea.getCaretColor(), theme.caretColor);
 	}
-*/
 
 
 	@Test
@@ -383,6 +390,34 @@ class ThemeTest {
 		theme.apply(textArea1);
 		assertColorsMatchTheme1(textArea1, gutter1);
 
+	}
+
+
+	@Test
+	void testLoad_fromStream_withDefaultFont_preservesLigatureAttributes() throws Exception {
+
+		Font baseFont = FontUtil.createFont(Font.MONOSPACED, Font.PLAIN, 10);
+		Map<TextAttribute, Object> extraAttrs = new HashMap<>();
+		extraAttrs.put(TextAttribute.KERNING, TextAttribute.KERNING_ON);
+		extraAttrs.put(TextAttribute.LIGATURES, TextAttribute.LIGATURES_ON);
+		baseFont = baseFont.deriveFont(extraAttrs);
+
+		InputStream in = getClass().getResourceAsStream("ThemeTest_theme1.xml");
+		Theme theme = Theme.load(in, baseFont);
+		in.close();
+
+		Assertions.assertEquals(baseFont, theme.baseFont);
+
+		// All fonts in the scheme have its ligature properties, even if they're
+		// different families
+		for (int i = 0; i < theme.scheme.getStyleCount(); i++) {
+			Style style = theme.scheme.getStyle(i);
+			if (style.font != null) {
+				Map<TextAttribute, ?> attrs = style.font.getAttributes();
+				Assertions.assertEquals(TextAttribute.KERNING_ON, attrs.get(TextAttribute.KERNING));
+				Assertions.assertEquals(TextAttribute.LIGATURES_ON, attrs.get(TextAttribute.LIGATURES));
+			}
+		}
 	}
 
 

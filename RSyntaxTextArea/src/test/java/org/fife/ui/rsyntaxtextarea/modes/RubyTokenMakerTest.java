@@ -23,7 +23,7 @@ import java.io.InputStream;
  * @author Robert Futrell
  * @version 1.0
  */
-class RubyTokenMakerTest extends AbstractTokenMakerTest {
+class RubyTokenMakerTest extends AbstractJFlexTokenMakerTest {
 
 
 	@Override
@@ -454,7 +454,7 @@ class RubyTokenMakerTest extends AbstractTokenMakerTest {
 
 
 	@Test
-	void testStringLiterals_continuedFromPirorLine() {
+	void testStringLiterals_continuedFromPriorLine() {
 
 		assertAllTokensOfType(TokenTypes.LITERAL_STRING_DOUBLE_QUOTE,
 			TokenTypes.LITERAL_STRING_DOUBLE_QUOTE,

@@ -17,8 +17,6 @@ import java.awt.Font;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -55,11 +53,10 @@ import org.fife.util.SwingUtils;
  * @author Robert Futrell
  * @version 1.0
  */
-class TipWindow extends JWindow implements ActionListener {
+class TipWindow extends JWindow {
 
 	private FocusableTip ft;
 	private JEditorPane textArea;
-	private String text;
 	private transient TipListener tipListener;
 	private transient HyperlinkListener userHyperlinkListener;
 
@@ -83,13 +80,12 @@ class TipWindow extends JWindow implements ActionListener {
 				!msg.substring(0,6).equalsIgnoreCase("<html>")) {
 			msg = "<html>" + HtmlUtil.escapeForHtml(msg, "<br>", false);
 		}
-		this.text = msg;
 		tipListener = new TipListener();
 
 		JPanel cp = new JPanel(new BorderLayout());
 		cp.setBorder(getToolTipBorder());
 		cp.setBackground(TipUtil.getToolTipBackground());
-		textArea = new JEditorPane("text/html", text);
+		textArea = new JEditorPane("text/html", msg);
 		TipUtil.tweakTipEditorPane(textArea);
 		if (ft.getImageBase()!=null) { // Base URL for images
 			((HTMLDocument)textArea.getDocument()).setBase(ft.getImageBase());
@@ -133,9 +129,7 @@ class TipWindow extends JWindow implements ActionListener {
 	}
 
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-
+	public void actionPerformed() {
 		if (!getFocusableWindowState()) {
 			setFocusableWindowState(true);
 			setBottomPanel();
@@ -148,11 +142,8 @@ class TipWindow extends JWindow implements ActionListener {
 				}
 			});
 			ft.removeListeners();
-			if (e==null) { // Didn't get here via our mouseover timer
-				requestFocus();
-			}
+			requestFocus();
 		}
-
 	}
 
 
@@ -174,9 +165,7 @@ class TipWindow extends JWindow implements ActionListener {
 
 	/**
 	 * Workaround for JEditorPane not returning its proper preferred size
-	 * when rendering HTML until after layout already done.  See
-	 * http://forums.sun.com/thread.jspa?forumID=57&threadID=574810 for a
-	 * discussion.
+	 * when rendering HTML until after layout already done.
 	 */
 	void fixSize() {
 
@@ -206,7 +195,7 @@ class TipWindow extends JWindow implements ActionListener {
 			r = SwingUtils.getBounds(textArea, textArea.getDocument().getLength()-1);
 			if (r.y+r.height>d.height) {
 				d.height = r.y + r.height + 5;
-				if(ft.getMaxSize() != null) {
+				if (ft.getMaxSize() != null) {
 					d.height = Math.min(d.height, maxWindowH);
 				}
 				textArea.setPreferredSize(d);
@@ -257,8 +246,8 @@ class TipWindow extends JWindow implements ActionListener {
 	}
 
 
-	public String getText() {
-		return text;
+	protected String getText() {
+		return textArea.getText();
 	}
 
 
@@ -298,15 +287,12 @@ class TipWindow extends JWindow implements ActionListener {
 				public void mouseDragged(MouseEvent e) {
 					Point p = e.getPoint();
 					SwingUtilities.convertPointToScreen(p, panel);
-					if (lastPoint==null) {
-						lastPoint = p;
-					}
-					else {
+					if (lastPoint != null) {
 						int dx = p.x - lastPoint.x;
 						int dy = p.y - lastPoint.y;
-						setLocation(getX()+dx, getY()+dy);
-						lastPoint = p;
+						setLocation(getX() + dx, getY() + dy);
 					}
+					lastPoint = p;
 				}
 				@Override
 				public void mousePressed(MouseEvent e) {
@@ -388,7 +374,7 @@ class TipWindow extends JWindow implements ActionListener {
 
 		@Override
 		public void mousePressed(MouseEvent e) {
-			actionPerformed(null); // Manually create "real" window
+			actionPerformed(); // Manually create "real" window
 		}
 
 		@Override

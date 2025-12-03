@@ -83,12 +83,14 @@ import org.fife.util.SwingUtils;
  *       <li>Protobuf files
  *       <li>Python
  *       <li>Ruby
+ *       <li>Rust
  *       <li>SAS
  *       <li>Scala
  *       <li>SQL
  *       <li>Tcl
  *       <li>UNIX shell scripts
  *       <li>Visual Basic
+ *       <li>VHDL
  *       <li>Windows batch
  *       <li>XML files
  *    </ul>
@@ -316,13 +318,16 @@ public class RSyntaxTextArea extends RTextArea implements SyntaxConstants {
 	/** Whether a popup showing matched bracket lines when they're off-screen. */
 	private boolean showMatchedBracketPopup;
 
-private int lineHeight;		// Height of a line of text; same for default, bold & italic.
-private int maxAscent;
-private boolean fractionalFontMetricsEnabled;
+	private int lineHeight;		// Height of a line of text; same for default, bold & italic.
+	private int maxAscent;
+	private boolean fractionalFontMetricsEnabled;
 
 	private Color[] secondaryLanguageBackgrounds;
 
 	private boolean insertPairedCharacters;
+
+	private TokenPainterFactory tokenPainterFactory;
+
 
 	/**
 	 * Constructor.
@@ -494,14 +499,27 @@ private boolean fractionalFontMetricsEnabled;
 	 * @see #createPopupMenu()
 	 */
 	protected void appendFoldingMenu(JPopupMenu popup) {
-		popup.addSeparator();
+		appendFoldingMenu(popup, popup.getComponentCount());
+	}
+
+
+	/**
+	 * Appends a submenu with code folding options to this text component's
+	 * popup menu.
+	 *
+	 * @param popup The popup menu to append to.
+	 * @param index The index where to append the context menu.
+	 * @see #createPopupMenu()
+	 */
+	protected void appendFoldingMenu(JPopupMenu popup, int index) {
+		popup.add(new JPopupMenu.Separator(), index);
 		ResourceBundle bundle = ResourceBundle.getBundle(MSG);
 		foldingMenu = new JMenu(bundle.getString("ContextMenu.Folding"));
 		foldingMenu.add(createPopupMenuItem(toggleCurrentFoldAction));
 		foldingMenu.add(createPopupMenuItem(collapseAllCommentFoldsAction));
 		foldingMenu.add(createPopupMenuItem(collapseAllFoldsAction));
 		foldingMenu.add(createPopupMenuItem(expandAllFoldsAction));
-		popup.add(foldingMenu);
+		popup.add(foldingMenu, index+1);
 
 	}
 
@@ -794,6 +812,17 @@ private boolean fractionalFontMetricsEnabled;
 	@Override
 	protected RTextAreaUI createRTextAreaUI() {
 		return new RSyntaxTextAreaUI(this);
+	}
+
+
+	/**
+	 * Called whenever whitespace visibility changes. Returns the
+	 * token painter to use for this text area.
+	 *
+	 * @return The token painter to use.
+	 */
+	protected TokenPainter createTokenPainter() {
+		return tokenPainterFactory.getTokenPainter(this);
 	}
 
 
@@ -1183,6 +1212,17 @@ private boolean fractionalFontMetricsEnabled;
 	/**
 	 * Returns the font for tokens of the specified type.
 	 *
+	 * @param token the token.
+	 * @return The font to use for that token type.
+	 * @see #getFontMetricsForTokenType(int)
+	 */
+	public Font getFontForToken(Token token) {
+		return getFontForTokenType(token.getType());
+	}
+
+	/**
+	 * Returns the font for tokens of the specified type.
+	 *
 	 * @param type The type of token.
 	 * @return The font to use for that token type.
 	 * @see #getFontMetricsForTokenType(int)
@@ -1192,6 +1232,16 @@ private boolean fractionalFontMetricsEnabled;
 		return f!=null ? f : getFont();
 	}
 
+	/**
+	 * Returns the font metrics for the given token.
+	 *
+	 * @param token the Token
+	 * @return The font metrics to use for that tokenx.
+	 * @see #getFontForTokenType(int)
+	 */
+	public FontMetrics getFontMetricsForToken(Token token) {
+		return getFontMetricsForTokenType(token.getType());
+	}
 
 	/**
 	 * Returns the font metrics for tokens of the specified type.
@@ -1775,7 +1825,7 @@ private boolean fractionalFontMetricsEnabled;
 				if (t.length() == 1 && t.charAt(0) == '\n') {
 					gen.appendNewline();
 				} else {
-					Font font = getFontForTokenType(t.getType());
+					Font font = getFontForToken(t);
 					Color bg = getBackgroundForToken(t);
 					boolean underline = getUnderlineForToken(t);
 					// Small optimization - don't print fg color if this
@@ -2042,7 +2092,8 @@ private boolean fractionalFontMetricsEnabled;
 		super.init();
 		metricsNeverRefreshed = true;
 
-		tokenPainter = new DefaultTokenPainter();
+		tokenPainterFactory = new DefaultTokenPainterFactory();
+		tokenPainter = tokenPainterFactory.getTokenPainter(this);
 
 		// NOTE: Our actions are created here instead of in a static block
 		// so they are only created when the first RTextArea is instantiated,
@@ -2649,6 +2700,7 @@ private boolean fractionalFontMetricsEnabled;
 			}
 			firePropertyChange(FRACTIONAL_FONTMETRICS_PROPERTY,
 											!enabled, enabled);
+			repaint();
 		}
 	}
 
@@ -3245,6 +3297,18 @@ private boolean fractionalFontMetricsEnabled;
 
 
 	/**
+	 * Sets the token painter factory to use.
+	 *
+	 * @param tpf The new token painter factory. This should not
+	 *        be {@code null}.
+	 */
+	public void setTokenPainterFactory(TokenPainterFactory tpf) {
+		tokenPainterFactory = tpf;
+		tokenPainter = createTokenPainter();
+	}
+
+
+	/**
 	 * Sets whether "focusable" tool tips are used instead of standard ones.
 	 * Focusable tool tips are tool tips that the user can click on,
 	 * resize, copy from, and clink links in.  This method fires a property
@@ -3292,8 +3356,7 @@ private boolean fractionalFontMetricsEnabled;
 	public void setWhitespaceVisible(boolean visible) {
 		if (whitespaceVisible!=visible) {
 			this.whitespaceVisible = visible;
-			tokenPainter = visible ? new VisibleWhitespaceTokenPainter() :
-					new DefaultTokenPainter();
+			tokenPainter = createTokenPainter();
 			repaint();
 			firePropertyChange(VISIBLE_WHITESPACE_PROPERTY, !visible, visible);
 		}
@@ -3394,11 +3457,12 @@ private boolean fractionalFontMetricsEnabled;
 				popup.dispose();
 			}
 
-			Window window = SwingUtilities.getWindowAncestor(RSyntaxTextArea.this);
-			popup = new MatchedBracketPopup(window, RSyntaxTextArea.this, matchedBracketOffs);
-			popup.pack();
-			popup.setVisible(true);
-
+			if (RSyntaxTextArea.this.hasFocus()) {
+				Window window = SwingUtilities.getWindowAncestor(RSyntaxTextArea.this);
+				popup = new MatchedBracketPopup(window, RSyntaxTextArea.this, matchedBracketOffs);
+				popup.pack();
+				popup.setVisible(true);
+			}
 		}
 
 		@Override

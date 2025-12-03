@@ -46,8 +46,9 @@ import javax.swing.text.TabExpander;
  *
  * @author Robert Futrell
  * @version 1.0
+ * @see DefaultTokenPainter
  */
-public class VisibleWhitespaceTokenPainter extends DefaultTokenPainter { // DBVIS-5813 Make class public
+public class VisibleWhitespaceTokenPainter extends DefaultTokenPainter {
 
 
 	@Override
@@ -65,8 +66,8 @@ public class VisibleWhitespaceTokenPainter extends DefaultTokenPainter { // DBVI
 		Color fg = useSTC ? host.getSelectedTextColor() :
 			host.getForegroundForToken(token);
 		Color bg = selected ? null : host.getBackgroundForToken(token);
-		g.setFont(host.getFontForTokenType(token.getType()));
-		FontMetrics fm = host.getFontMetricsForTokenType(token.getType());
+		g.setFont(host.getFontForToken(token));
+		FontMetrics fm = host.getFontMetricsForToken(token);
 
 		int ascent = fm.getAscent();
 		int height = fm.getHeight();
@@ -79,9 +80,9 @@ public class VisibleWhitespaceTokenPainter extends DefaultTokenPainter { // DBVI
 
 					// Fill in background.
 					nextX = x + SwingUtils.charsWidth(fm, text, flushIndex,flushLen);
-					float nextNextX = e.nextTabStop(nextX, 0);
+					float nextTabStop = e.nextTabStop(nextX, 0);
 					if (bg!=null) {
-						paintBackground(x,y, nextNextX-x,height, g,
+						paintBackground(x,y, nextTabStop-x,height, g,
 										ascent, host, bg);
 					}
 					g.setColor(fg);
@@ -97,11 +98,11 @@ public class VisibleWhitespaceTokenPainter extends DefaultTokenPainter { // DBVI
 					float halfHeight = height / 2;
 					float quarterHeight = halfHeight / 2;
 					float ymid = (int)y - ascent + halfHeight;
-					SwingUtils.drawLine(g, nextX,ymid, nextNextX,ymid);
-					SwingUtils.drawLine(g, nextNextX,ymid, nextNextX-4,ymid-quarterHeight);
-					SwingUtils.drawLine(g, nextNextX,ymid, nextNextX-4,ymid+quarterHeight);
+					SwingUtils.drawLine(g, nextX,ymid, nextTabStop,ymid);
+					SwingUtils.drawLine(g, nextTabStop,ymid, nextTabStop-4,ymid-quarterHeight);
+					SwingUtils.drawLine(g, nextTabStop,ymid, nextTabStop-4,ymid+quarterHeight);
 
-					x = nextNextX;
+					x = nextTabStop;
 					break;
 
 				case ' ':
@@ -132,10 +133,7 @@ public class VisibleWhitespaceTokenPainter extends DefaultTokenPainter { // DBVI
 						flushLen = 0;
 					}
 
-					// Paint a dot representing the space.
-					float dotX = nextX - width/2f; // "2.0f" for FindBugs
-					float dotY = y - ascent + height/2f; // Ditto
-					SwingUtils.drawLine(g, dotX, dotY, dotX, dotY);
+					paintSpaceText(g, nextX, y, ascent, width, height);
 					flushIndex = i + 1;
 					x = nextX;
 					break;
@@ -180,5 +178,47 @@ public class VisibleWhitespaceTokenPainter extends DefaultTokenPainter { // DBVI
 
 	}
 
+
+	/**
+	 * Draws the textual indication of a space, i.e. a single dot. The
+	 * background has already been filled in properly, and the foreground
+	 * color properly set.
+	 *
+	 * @param g The graphics context.
+	 * @param x The x-value at which to paint.
+	 * @param y The y-value of the current line.
+	 * @param ascent The ascent of the current font.
+	 * @param width The width of the space character.
+	 * @param height The height of the current line of text being painted.
+	 */
+	protected void paintSpaceText(Graphics2D g, float x, float y, int ascent,
+								  float width, float height) {
+		// Paint a dot representing the space.
+		float dotX = x - width/2f;
+		float dotY = y - ascent + height/2f;
+		SwingUtils.drawLine(g, dotX, dotY, dotX, dotY);
+	}
+
+
+	/**
+	 * Draws the text representing a tab. The background has already been
+	 * filled in if necessary, and the foreground color properly set.
+	 *
+	 * @param g The graphics context.
+	 * @param x The x-value at which to paint.
+	 * @param y The y-value of the current line.
+	 * @param nextTabStop Where the next tab stop would start.
+	 * @param ascent The ascent of the current font.
+	 * @param height The height of the line of text being painted.
+	 */
+	protected void paintTabText(Graphics2D g, float x, float y,
+						float nextTabStop, int ascent, int height) {
+		int x2 = (int)nextTabStop - 3;
+		if (x2 >= (int)x) {
+			int halfHeight = height / 2;
+			int ymid = (int) y - ascent + halfHeight;
+			g.drawLine((int) x, ymid, x2, ymid);
+		}
+	}
 
 }

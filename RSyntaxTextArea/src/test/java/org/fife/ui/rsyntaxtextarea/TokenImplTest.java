@@ -9,6 +9,8 @@ package org.fife.ui.rsyntaxtextarea;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
+
 
 /**
  * Unit tests for the {@link TokenImpl} class.
@@ -17,6 +19,92 @@ import org.junit.jupiter.api.Test;
  * @version 1.0
  */
 class TokenImplTest {
+
+
+	@Test
+	void testEndsWith_charAt_happyPath() {
+
+		char[] ch = "for".toCharArray();
+		TokenImpl token = new TokenImpl(ch, 0, 2, 0, TokenTypes.IDENTIFIER, 0);
+
+		Assertions.assertNotEquals('a', token.charAt(0));
+		Assertions.assertEquals('f', token.charAt(0));
+		Assertions.assertEquals('o', token.charAt(1));
+		Assertions.assertEquals('r', token.charAt(2));
+	}
+
+
+	@Test
+	void testEndsWith_char_happyPath() {
+
+		char[] ch = "for".toCharArray();
+		TokenImpl token = new TokenImpl(ch, 0, 2, 0, TokenTypes.IDENTIFIER, 0);
+
+		Assertions.assertFalse(token.endsWith('a'));
+		Assertions.assertTrue(token.endsWith('r'));
+	}
+
+
+	@Test
+	void testEndsWith_char_nullToken() {
+		Assertions.assertFalse(new TokenImpl().endsWith('a'));
+	}
+
+
+	@Test
+	void testEndsWith_charArray_happyPath() {
+
+		char[] ch = "for".toCharArray();
+		TokenImpl token = new TokenImpl(ch, 0, 2, 0, TokenTypes.IDENTIFIER, 0);
+
+		Assertions.assertFalse(token.endsWith("xxx".toCharArray()));
+		Assertions.assertFalse(token.endsWith("afor".toCharArray()));
+
+		Assertions.assertTrue(token.endsWith("r".toCharArray()));
+		Assertions.assertTrue(token.endsWith("or".toCharArray()));
+		Assertions.assertTrue(token.endsWith("for".toCharArray()));
+	}
+
+
+	@Test
+	void testEndsWith_charArray_null() {
+
+		char[] ch = "for".toCharArray();
+		TokenImpl token = new TokenImpl(ch, 0, 2, 0, TokenTypes.IDENTIFIER, 0);
+
+		Assertions.assertFalse(token.endsWith(null));
+	}
+
+
+	@Test
+	void testEndsWith_charArray_emptyArray() {
+
+		char[] ch = "for".toCharArray();
+		TokenImpl token = new TokenImpl(ch, 0, 2, 0, TokenTypes.IDENTIFIER, 0);
+
+		Assertions.assertTrue(token.endsWith("".toCharArray()));
+	}
+
+
+	@Test
+	void testGetHTMLRepresentation_fallsBackToTextAreaFont() {
+
+		RSyntaxTextArea textArea = new RSyntaxTextArea();
+		textArea.setForeground(new Color(0xfcfcfc));
+
+		// Ensure identifier tokens have no theme FG so the fallback is used
+		Style style = textArea.getSyntaxScheme().getStyle(
+			TokenTypes.IDENTIFIER);
+		style.foreground = null;
+
+		char[] ch = "for".toCharArray();
+		TokenImpl token = new TokenImpl(ch, 0, 2, 0, TokenTypes.IDENTIFIER, 0);
+
+		// Don't bother checking font and other styles since it may be host-specific
+		String actual = token.getHTMLRepresentation(textArea);
+		Assertions.assertTrue(actual.contains("color=\"#fcfcfc\""));
+
+	}
 
 
 	@Test
@@ -45,7 +133,6 @@ class TokenImplTest {
 
 		// Don't bother checking font and other styles since it may be host-specific
 		String actual = token.getHTMLRepresentation(textArea);
-		System.out.println(actual);
 		Assertions.assertTrue(actual.startsWith("<font"));
 		Assertions.assertTrue(actual.endsWith("> &amp;&#09;&lt;&gt;&#39;&#34;&#47;</font>"));
 
@@ -188,7 +275,7 @@ class TokenImplTest {
 
 
 	@Test
-	void testComment_false() {
+	void testIsComment_false() {
 		char[] ch = "for".toCharArray();
 		TokenImpl token = new TokenImpl(ch, 0, 2, 0, TokenTypes.RESERVED_WORD, 0);
 		Assertions.assertFalse(token.isComment());

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
  * @author Robert Futrell
  * @version 1.0
  */
-class UnixShellTokenMakerTest extends AbstractTokenMakerTest {
+class UnixShellTokenMakerTest extends AbstractJFlexTokenMakerTest {
 
 
 	@Override
@@ -1625,7 +1625,7 @@ class UnixShellTokenMakerTest extends AbstractTokenMakerTest {
 	 * Overrides the default implementation to remember the last token's lexeme
 	 * and type whenever an <code>addToken()</code> overload is called.
 	 */
-	private static class AddTokenCatchingUnixShellTokenMaker
+	private static final class AddTokenCatchingUnixShellTokenMaker
 			extends UnixShellTokenMaker {
 
 		private String lastTokenLexeme;

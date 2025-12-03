@@ -479,11 +479,6 @@ public abstract class RPrintUtilities {
 					try {
 						doc.getText((currentLineStart+startingOffset), currentPos, currentLineSeg);
 					} catch (BadLocationException ble) {
-						System.err.println("BadLocationException in print (a):");
-						System.err.println("==> currentLineStart: " + currentLineStart +
-							"; startingOffset: " + startingOffset + "; currentPos: " + currentPos);
-						System.err.println("==> Range: " + (currentLineStart+startingOffset) + " - " +
-									(currentLineStart+startingOffset+currentPos));
 						ble.printStackTrace();
 						return Printable.NO_SUCH_PAGE;
 					}
@@ -539,7 +534,7 @@ public abstract class RPrintUtilities {
 	 * A tab expander for the document currently being printed with the
 	 * font being used for the printing.
 	 */
-	private static class RPrintTabExpander implements TabExpander {
+	private static final class RPrintTabExpander implements TabExpander {
 
 		@Override
 		public float nextTabStop(float x, int tabOffset) {

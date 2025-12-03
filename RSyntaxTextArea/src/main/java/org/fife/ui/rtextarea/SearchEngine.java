@@ -93,15 +93,16 @@ public final class SearchEngine {
 		int start = forward ? Math.max(c.getDot(), c.getMark()) :
 						Math.min(c.getDot(), c.getMark());
 
-		String findIn = getFindInText(textArea, start, forward);
-		if (!context.getSearchWrap() && (findIn == null || findIn.isEmpty())) {
-			return new SearchResult();
-		}
 
 		int markAllCount = 0;
 		if (doMarkAll) {
 			markAllCount = markAllImpl((RTextArea)textArea, context).
 					getMarkedCount();
+		}
+
+		String findIn = getFindInText(textArea, start, forward);
+		if (!context.getSearchWrap() && (findIn == null || findIn.isEmpty())) {
+			return new SearchResult(null, 0, markAllCount);
 		}
 
 		SearchResult result = SearchEngine.findImpl(findIn == null ? "" : findIn, context);
@@ -177,7 +178,6 @@ public final class SearchEngine {
 		if (!context.isRegularExpression()) {
 			int pos = getNextMatchPos(text, findIn, forward,
 								context.getMatchCase(), context.getWholeWord());
-			findIn = null; // May help garbage collecting.
 			if (pos!=-1) {
 				range = new DocumentRange(pos, pos+text.length());
 			}
@@ -488,7 +488,7 @@ public final class SearchEngine {
 	 * @param searchIn The string to search in.
 	 * @param context The search options.
 	 * @return A <code>RegExReplaceInfo</code> object describing how to
-	 *         implement the replace.
+	 *         implement the replacement operation.
 	 * @throws PatternSyntaxException If the search text is an invalid regular
 	 *         expression.
 	 * @throws IndexOutOfBoundsException If the replacement text references an
@@ -498,7 +498,7 @@ public final class SearchEngine {
 	 */
 	private static RegExReplaceInfo getRegExReplaceInfo(CharSequence searchIn,
 										SearchContext context) {
-		// Can't pass null to getNextMatchPosRegExImpl or it'll think
+		// Can't pass null to getNextMatchPosRegExImpl, or it'll think
 		// you're doing a "find" operation instead of "replace", and return a
 		// Point.
 		String replacement = context.getReplaceWith();
@@ -706,7 +706,7 @@ public final class SearchEngine {
 		int markAllCount = 0;
 
 		// context.getMarkAll()==false => clear "mark all" highlights
-		if (context.getMarkAll() && toMark!=null && toMark.length()>0
+		if (context.getMarkAll() && toMark!=null && !toMark.isEmpty()
 				/*&& !toMark.equals(markedWord)*/) {
 
 			List<DocumentRange> highlights = new ArrayList<>();
@@ -807,7 +807,7 @@ public final class SearchEngine {
 		// Find the next location of the text we're searching for.
 		RegExReplaceInfo info = getRegExReplaceInfo(findIn, context);
 
-		// If a match was found, do the replace and return!
+		// If a match was found, do the replacement and return!
 		DocumentRange range = null;
 		if (info!=null) {
 

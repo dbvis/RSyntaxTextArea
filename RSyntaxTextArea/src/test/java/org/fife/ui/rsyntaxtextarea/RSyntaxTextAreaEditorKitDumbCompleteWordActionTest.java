@@ -7,6 +7,7 @@
 package org.fife.ui.rsyntaxtextarea;
 
 import java.awt.event.ActionEvent;
+import java.text.BreakIterator;
 import javax.swing.ActionMap;
 
 import org.fife.ui.SwingRunnerExtension;
@@ -55,6 +56,23 @@ class RSyntaxTextAreaEditorKitDumbCompleteWordActionTest extends AbstractRSyntax
 
 
 	@Test
+	void testActionPerformed_offset0() {
+
+		RSyntaxDocument doc = new RSyntaxDocument(
+			SyntaxConstants.SYNTAX_STYLE_JAVA);
+		RSyntaxTextArea textArea = new RSyntaxTextArea(doc);
+		String origText = "aaa aaaa aaaaa";
+		textArea.setText(origText);
+		textArea.setCaretPosition(0);
+		DumbCompleteWordAction action = getDumbCompleteWordAction(textArea);
+
+		action.actionPerformed(createActionEvent(textArea));
+		Assertions.assertEquals(origText, textArea.getText());
+		Assertions.assertEquals(0, textArea.getCaretPosition());
+	}
+
+
+	@Test
 	void testActionPerformed_manyLinesInBetween() {
 
 		DumbCompleteWordAction action = new DumbCompleteWordAction();
@@ -66,7 +84,8 @@ class RSyntaxTextAreaEditorKitDumbCompleteWordActionTest extends AbstractRSyntax
 		action.actionPerformed(createActionEvent(textArea));
 		Assertions.assertEquals("aaron arthur aardvark\nfoo bar\n// bad code\namazing\n   amazing", textArea.getText());
 		action.actionPerformed(createActionEvent(textArea));
-		Assertions.assertEquals("aaron arthur aardvark\nfoo bar\n// bad code\namazing\n   aardvark", textArea.getText());
+		Assertions.assertEquals("aaron arthur aardvark\nfoo bar\n// bad code\namazing\n   aardvark",
+			textArea.getText());
 		action.actionPerformed(createActionEvent(textArea));
 		Assertions.assertEquals("aaron arthur aardvark\nfoo bar\n// bad code\namazing\n   arthur", textArea.getText());
 		action.actionPerformed(createActionEvent(textArea));
@@ -252,12 +271,50 @@ class RSyntaxTextAreaEditorKitDumbCompleteWordActionTest extends AbstractRSyntax
 		RSyntaxTextArea textArea = new RSyntaxTextArea(doc);
 
 		textArea.setText("aaron arthur aardvark\nfoo bar\n// bad code\namazing\n   a");
-		Assertions.assertEquals(textArea.getDocument().getLength()-1, action.getPreviousWord(textArea, textArea.getDocument().getLength()));
-		Assertions.assertEquals("aaron arthur aardvark\nfoo bar\n// bad code\n".length(), action.getPreviousWord(textArea, textArea.getDocument().getLength()-2));
+		Assertions.assertEquals(textArea.getDocument().getLength()-1,
+			action.getPreviousWord(textArea, textArea.getDocument().getLength()));
+		Assertions.assertEquals("aaron arthur aardvark\nfoo bar\n// bad code\n".length(),
+			action.getPreviousWord(textArea, textArea.getDocument().getLength()-2));
 		Assertions.assertEquals("aaron arthur ".length(), action.getPreviousWord(textArea, 22));
 		Assertions.assertEquals("aaron ".length(), action.getPreviousWord(textArea, 8));
 
 	}
 
 
+	@Test
+	void testGetWordStart_offset0() throws Exception {
+
+		DumbCompleteWordAction action = new DumbCompleteWordAction();
+		RSyntaxDocument doc = new RSyntaxDocument(
+			SyntaxConstants.SYNTAX_STYLE_JAVA);
+		RSyntaxTextArea textArea = new RSyntaxTextArea(doc);
+
+		textArea.setText("aa aaa aaaa");
+		textArea.setCaretPosition(0);
+		Assertions.assertEquals(BreakIterator.DONE, action.getPreviousWord(textArea, 0));
+	}
+
+
+	@Test
+	void testIsAcceptablePrefix_emptyString() {
+		DumbCompleteWordAction action = new DumbCompleteWordAction();
+		Assertions.assertFalse(action.isAcceptablePrefix(""));
+	}
+
+
+	@Test
+	void testIsAcceptablePrefix_happyPath() {
+		DumbCompleteWordAction action = new DumbCompleteWordAction();
+		Assertions.assertTrue(action.isAcceptablePrefix("aa"));
+		Assertions.assertTrue(action.isAcceptablePrefix("aa123"));
+		Assertions.assertTrue(action.isAcceptablePrefix("aa_"));
+	}
+
+
+	@Test
+	void testIsAcceptablePrefix_trailingNonIdentifierChar() {
+		DumbCompleteWordAction action = new DumbCompleteWordAction();
+		Assertions.assertFalse(action.isAcceptablePrefix("aa/"));
+		Assertions.assertFalse(action.isAcceptablePrefix("aa-"));
+	}
 }

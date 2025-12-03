@@ -32,7 +32,6 @@ import javax.swing.plaf.TextUI;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Caret;
-import javax.swing.text.StyleContext;
 
 
 /**
@@ -64,7 +63,7 @@ public abstract class RTextAreaBase extends JTextArea {
 	private boolean fadeCurrentLineHighlight;	// "Fade effect" for current line highlight.
 	private boolean roundedSelectionEdges;
 	private int previousCaretY;
-	int currentCaretY;							// Used to know when to rehighlight current line.
+	int currentCaretY;							// Used to know when to highlight current line.
 
 	private BackgroundPainterStrategy backgroundPainter;	// Paints the background.
 
@@ -303,7 +302,7 @@ public abstract class RTextAreaBase extends JTextArea {
 	 */
 	protected void forceCurrentLineHighlightRepaint() {
 		// Check isShowing() to prevent BadLocationException
-		// in constructor if linewrap is set to true.
+		// in constructor if line wrap is set to true.
 		if (isShowing()) {
 			// Changing previousCaretY makes us sure to get a repaint.
 			previousCaretY = -1;
@@ -446,34 +445,7 @@ public abstract class RTextAreaBase extends JTextArea {
 	 * @return The default font.
 	 */
 	public static Font getDefaultFont() {
-
-		// Use StyleContext to get a composite font for better Asian language
-		// support; see Sun bug S282887.
-		StyleContext sc = StyleContext.getDefaultStyleContext();
-		Font font;
-
-		if (isOSX()) {
-			// Snow Leopard (1.6) uses Menlo as default monospaced font,
-			// pre-Snow Leopard used Monaco.
-			font = sc.getFont("Menlo", Font.PLAIN, 12);
-			if (!"Menlo".equals(font.getFamily())) {
-				font = sc.getFont("Monaco", Font.PLAIN, 12);
-				if (!"Monaco".equals(font.getFamily())) { // Shouldn't happen
-					font = sc.getFont(Font.MONOSPACED, Font.PLAIN, 13);
-				}
-			}
-		}
-		else {
-			// Consolas added in Vista, used by VS2010+.
-			font = sc.getFont("Consolas", Font.PLAIN, 13);
-			if (!"Consolas".equals(font.getFamily())) {
-				font = sc.getFont(Font.MONOSPACED, Font.PLAIN, 13);
-			}
-		}
-
-		//System.out.println(font.getFamily() + ", " + font.getName());
-		return font;
-
+		return FontUtil.getDefaultMonospacedFont();
 	}
 
 
@@ -825,7 +797,7 @@ try {
 	 * image is used for the background, opaque is set to false.  This is
 	 * because we perform better when setOpaque is true, but if we use an
 	 * image for the background when opaque is true, we get on-screen
-	 * garbage when the user scrolls via the arrow keys.  Thus we
+	 * garbage when the user scrolls via the arrow keys.  Thus, we
 	 * need setOpaque to be false in that case.<p>
 	 * You never have to change the opaque property yourself; it is always done
 	 * for you.
@@ -857,7 +829,7 @@ try {
 	 * background (by this method), opaque is set to false.  This is because
 	 * we perform better when setOpaque is true, but if we use an
 	 * image for the background when opaque is true, we get on-screen
-	 * garbage when the user scrolls via the arrow keys.  Thus we
+	 * garbage when the user scrolls via the arrow keys.  Thus, we
 	 * need setOpaque to be false in that case.<p>
 	 * You never have to change the opaque property yourself; it is always done
 	 * for you.
@@ -1112,7 +1084,7 @@ try {
 	/**
 	 * Sets the UI for this <code>RTextArea</code>.  Note that, for instances
 	 * of <code>RTextArea</code>, <code>setUI</code> only updates the popup
-	 * menu; this is because <code>RTextArea</code>s' look and feels are
+	 * menu; this is because <code>RTextArea</code>'s look and feels are
 	 * independent of the Java Look and Feel.  This method is here so
 	 * subclasses can set a UI (subclass of <code>RTextAreaUI</code>) if they
 	 * have to.

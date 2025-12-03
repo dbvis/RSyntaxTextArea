@@ -22,6 +22,7 @@ import org.fife.util.SwingUtils;
  *
  * @author Robert Futrell
  * @version 1.0
+ * @see VisibleWhitespaceTokenPainter
  */
 public class DefaultTokenPainter implements TokenPainter { // DBVIS-5813 Make class public
 
@@ -41,6 +42,34 @@ public class DefaultTokenPainter implements TokenPainter { // DBVIS-5813 Make cl
 	public DefaultTokenPainter() {
 		bgRect = new Rectangle2D.Float();
 	} // DBVIS-5813 make public
+
+
+	@Override
+	public float nextX(Token token, int charCount, float x,
+							RSyntaxTextArea host, TabExpander e) {
+
+		int textOffs = token.getTextOffset();
+		char[] text = token.getTextArray();
+		int end = textOffs + charCount;
+		int flushLen = 0;
+		int flushIndex = textOffs;
+		FontMetrics fm = host.getFontMetricsForTokenType(token.getType());
+
+		for (int i=textOffs; i<end; i++) {
+            if (text[i] == '\t') {
+                x = e.nextTabStop(
+                        x + fm.charsWidth(text, flushIndex, flushLen), 0);
+                flushLen = 0;
+                flushIndex = i + 1;
+            }
+            else {
+                flushLen++;
+            }
+		}
+
+		return x + fm.charsWidth(text, flushIndex, flushLen);
+
+	}
 
 
 	@Override
@@ -105,8 +134,8 @@ public class DefaultTokenPainter implements TokenPainter { // DBVIS-5813 Make cl
 		Color fg = useSTC ? host.getSelectedTextColor() :
 			host.getForegroundForToken(token);
 		Color bg = selected ? null : host.getBackgroundForToken(token);
-		g.setFont(host.getFontForTokenType(token.getType()));
-		FontMetrics fm = host.getFontMetricsForTokenType(token.getType());
+		g.setFont(host.getFontForToken(token));
+		FontMetrics fm = host.getFontMetricsForToken(token);
 
 		for (int i=textOffs; i<end; i++) {
 			switch (text[i]) {
@@ -187,7 +216,7 @@ public class DefaultTokenPainter implements TokenPainter { // DBVIS-5813 Make cl
 	 *
 	 * @param token The token to render.
 	 * @param x The starting x-offset of this token.  It is assumed that this
-	 *        is the left margin of the text area (may be non-zero due to
+	 *        is the left margin of the text area (might be non-zero due to
 	 *        insets), since tab lines are only painted for leading whitespace.
 	 * @param y The baseline where this token was painted.
 	 * @param endX The ending x-offset of this token.
@@ -218,7 +247,7 @@ public class DefaultTokenPainter implements TokenPainter { // DBVIS-5813 Make cl
 		}
 
 		// Get the length of a tab.
-		FontMetrics fm = host.getFontMetricsForTokenType(token.getType());
+		FontMetrics fm = host.getFontMetricsForToken(token);
 		int tabSize = host.getTabSize();
 		if (tabBuf==null || tabBuf.length<tabSize) {
 			tabBuf = new char[tabSize];
@@ -256,7 +285,6 @@ public class DefaultTokenPainter implements TokenPainter { // DBVIS-5813 Make cl
 				SwingUtils.drawLine(g, x0, y1, x0, y1);
 				y1 += 2;
 			}
-			//g.drawLine(x0,y0, x0,y0+host.getLineHeight());
 			x0 += tabW;
 		}
 

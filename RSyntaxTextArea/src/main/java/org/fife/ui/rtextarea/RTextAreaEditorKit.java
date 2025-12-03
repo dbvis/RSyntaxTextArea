@@ -429,7 +429,7 @@ public class RTextAreaEditorKit extends DefaultEditorKit {
 			} // End of for (int counter = 0; counter < nch; counter++).
 
 			if (last < nch) {
-				if(lastWasCR) {
+				if (lastWasCR) {
 					if (last < (nch - 1)) {
 						doc.insertString(pos, new String(buff, last,
 										nch - last - 1), null);
@@ -1181,9 +1181,7 @@ public class RTextAreaEditorKit extends DefaultEditorKit {
 						return;
 					}
 					lastWordStart = dot - lastPrefix.length();
-//					searchOffs = lastWordStart;
-//searchOffs = getWordStart(textArea, lastWordStart);
-searchOffs = Math.max(lastWordStart - 1, 0);
+					searchOffs = Math.max(lastWordStart - 1, 0);
 				}
 
 				while (searchOffs > 0) {
@@ -1249,7 +1247,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 		 *         of the text area's current content.
 		 */
 		protected boolean isAcceptablePrefix(String prefix) {
-			return prefix.length() > 0 &&
+			return !prefix.isEmpty() &&
 				Character.isLetter(prefix.charAt(prefix.length()-1));
 		}
 
@@ -1938,9 +1936,9 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 		@Override
 		public void actionPerformedImpl(ActionEvent e, RTextArea textArea) {
 			String selectedText = textArea.getSelectedText();
-			if (selectedText == null || selectedText.length() == 0) {
+			if (selectedText == null || selectedText.isEmpty()) {
 				selectedText = RTextArea.getSelectedOccurrenceText();
-				if (selectedText == null || selectedText.length() == 0) {
+				if (selectedText == null || selectedText.isEmpty()) {
 					UIManager.getLookAndFeel().provideErrorFeedback(textArea);
 					return;
 				}
@@ -2015,7 +2013,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 
 			try {
 
-				if(magicPosition == null &&
+				if (magicPosition == null &&
 					(direction == SwingConstants.NORTH ||
 					direction == SwingConstants.SOUTH)) {
 					Rectangle r = SwingUtils.getBounds(textArea, dot);
@@ -2040,7 +2038,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 					caret.setDot(dot);
 				}
 
-				if(magicPosition != null &&
+				if (magicPosition != null &&
 					(direction == SwingConstants.NORTH ||
 					direction == SwingConstants.SOUTH)) {
 						caret.setMagicCaretPosition(magicPosition);
@@ -2081,7 +2079,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 
 			try {
 				offs = getNextWord(textArea, offs);
-				if(offs >= curPara.getEndOffset() &&
+				if (offs >= curPara.getEndOffset() &&
 							oldOffs != curPara.getEndOffset() - 1) {
 					// we should first move to the end of current paragraph
 					// https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4278839
@@ -2090,7 +2088,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 			} catch (BadLocationException ble) {
 				int end = textArea.getDocument().getLength();
 				if (offs != end) {
-					if(oldOffs != curPara.getEndOffset() - 1) {
+					if (oldOffs != curPara.getEndOffset() - 1) {
 						offs = curPara.getEndOffset() - 1;
 					}
 					else {
@@ -2149,7 +2147,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 			}
 
 			selectedIndex = textArea.getCaretPosition();
-			if(selectedIndex != -1) {
+			if (selectedIndex != -1) {
 				if (left) {
 					selectedIndex = textArea.viewToModel2D(
 									new Point(visible.x, visible.y));
@@ -2164,7 +2162,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 					(selectedIndex  > (doc.getLength()-1))) {
 					selectedIndex = doc.getLength()-1;
 				}
-				else if(selectedIndex  < 0) {
+				else if (selectedIndex  < 0) {
 					selectedIndex = 0;
 				}
 				if (select) {
@@ -2257,9 +2255,9 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 		@Override
 		public void actionPerformedImpl(ActionEvent e, RTextArea textArea) {
 			String selectedText = textArea.getSelectedText();
-			if (selectedText == null || selectedText.length() == 0) {
+			if (selectedText == null || selectedText.isEmpty()) {
 				selectedText = RTextArea.getSelectedOccurrenceText();
-				if (selectedText == null || selectedText.length() == 0) {
+				if (selectedText == null || selectedText.isEmpty()) {
 					UIManager.getLookAndFeel().provideErrorFeedback(textArea);
 					return;
 				}
@@ -2304,7 +2302,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 
 				Element curPara = Utilities.getParagraphElement(textArea, offs);
 				offs = getPreviousWord(textArea, offs);
-				if(offs < curPara.getStartOffset()) {
+				if (offs < curPara.getStartOffset()) {
 					offs = Utilities.getParagraphElement(textArea, offs).
 												getEndOffset() - 1;
 				}
@@ -2877,7 +2875,7 @@ searchOffs = Math.max(lastWordStart - 1, 0);
 					}
 					if ((direction == -1 && y < initialY) ||
 						(direction == 1 && y > initialY)) {
-						// Only adjust if won't cause scrolling upward.
+						// Only adjust if it won't cause scrolling upward.
 						visible.y = y;
 					}
 				}

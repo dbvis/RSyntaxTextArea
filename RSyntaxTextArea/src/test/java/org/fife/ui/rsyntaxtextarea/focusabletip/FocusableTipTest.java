@@ -57,7 +57,64 @@ class FocusableTipTest extends AbstractRSyntaxTextAreaTest {
 
 
 	@Test
-	void testShowFocusableTip_happyPath() {
+	void testHide_onEmptyContent() {
+
+		Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());
+
+		RSyntaxTextArea textArea = createTextArea();
+		FocusableTip tip = new TestableFocusableTip(textArea, null);
+		MouseEvent e = new MouseEvent(textArea, 0, System.currentTimeMillis(),
+			0, 10, 10, 1, false);
+		tip.toolTipRequested(e, "Hello world");
+		Assertions.assertTrue(tip.isVisible());
+
+		tip.toolTipRequested(e, "");
+
+		// Verify tool tip was hidden and disposed of
+		Assertions.assertFalse(tip.possiblyDisposeOfTipWindow());
+	}
+
+
+	@Test
+	void testHide_onNullContent() {
+
+		Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());
+
+		RSyntaxTextArea textArea = createTextArea();
+		FocusableTip tip = new TestableFocusableTip(textArea, null);
+		MouseEvent e = new MouseEvent(textArea, 0, System.currentTimeMillis(),
+			0, 10, 10, 1, false);
+		tip.toolTipRequested(e, "Hello world");
+		Assertions.assertTrue(tip.isVisible());
+
+		tip.toolTipRequested(e, null);
+
+		// Verify tool tip was hidden and disposed of
+		Assertions.assertFalse(tip.possiblyDisposeOfTipWindow());
+	}
+
+
+	@Test
+	void testHide_onTextAreaContentUpdated() {
+
+		Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());
+
+		RSyntaxTextArea textArea = createTextArea();
+		FocusableTip tip = new TestableFocusableTip(textArea, null);
+		MouseEvent e = new MouseEvent(textArea, 0, System.currentTimeMillis(),
+			0, 10, 10, 1, false);
+		tip.toolTipRequested(e, "Hello world");
+		Assertions.assertTrue(tip.isVisible());
+
+		textArea.insert("foo", 0);
+
+		// Verify tool tip was hidden and disposed of
+		Assertions.assertFalse(tip.possiblyDisposeOfTipWindow());
+	}
+
+
+	@Test
+	void testShowFocusableTip_display_happyPath() {
 
 		Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());
 
@@ -70,13 +127,14 @@ class FocusableTipTest extends AbstractRSyntaxTextAreaTest {
 		tip.possiblyDisposeOfTipWindow();
 	}
 
+
 	/**
 	 * Needed to avoid a call to {@code SwingUtilities.invokeLater()}
-	 * which doesn't seem possible to unit test
+	 * which doesn't seem possible to unit test.
 	 */
 	static class TestableFocusableTip extends FocusableTip {
 
-		public TestableFocusableTip(JTextArea textArea, HyperlinkListener listener) {
+		TestableFocusableTip(JTextArea textArea, HyperlinkListener listener) {
 			super(textArea, listener);
 		}
 
