@@ -43,7 +43,7 @@ public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 			return token.getOffset();
 		}
 
-		float currX = x0; // x-coordinate of current char.
+		float currX; // x-coordinate of current char.
 		float nextX = x0; // x-coordinate of next char.
 		float stableX = x0; // Cached ending x-coord. of last tab or token.
 		int last = token.getOffset();
@@ -71,7 +71,7 @@ public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 					boolean beforeMiddle = x - currX < nextX - x;
 					float finalCurrX = currX;
 					int result = beforeMiddle ? offset : offset + 1;
-					LOG.fine(()->String.format("x=%.3f | currX=%.3f => offset=%,d", x, finalCurrX, result));
+					LOG.fine(() -> String.format("x=%.3f | currX=%.3f => offset=%,d", x, finalCurrX, result));
 					return result;
 				}
 			}
@@ -100,8 +100,7 @@ public class DefaultTokenViewModelConverter implements TokenViewModelConverter {
 				return rect; // Don't return null as things will error.
 			}
 			char[] text = token.text;
-			int start = token.textOffset;
-			int end = start + token.textCount;
+			int end;
 
 			// If this token contains the position for which to get the
 			// bounding box...

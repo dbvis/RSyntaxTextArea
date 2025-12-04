@@ -1,14 +1,23 @@
+/*
+ * This library is distributed under a modified BSD license.  See the included
+ * LICENSE file for details.
+ */
 package org.fife.ui.rsyntaxtextarea;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
 import javax.swing.text.TabExpander;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
 import java.util.Arrays;
 
+/**
+ * Unit test for the {@code AbstractTokenViewModelConverter} class.
+ *
+ * @author Peer
+ * @version 1.0
+ */
 public class AbstractTokenViewModelConverterTest {
 
 	@Test
@@ -49,9 +58,6 @@ public class AbstractTokenViewModelConverterTest {
 		assertGetListOffset(text, 9, xOffset, 95.9f);
 
 		// click close to end of character ("round"") - NOT IMPLEMENTED
-		xOffset = 0;
-//		assertGetListOffset(1, 5.01f);
-//		assertGetListOffset(-1, 95.01f);
 	}
 
 	private static void assertGetListOffset(String text, int expected, float x0, float x) {
@@ -59,29 +65,28 @@ public class AbstractTokenViewModelConverterTest {
 		int tokenEndOffset = text.length();
 		FontMetrics fm = new MyFontMetrics(10f);
 
-		int actual = AbstractTokenViewModelConverter.getListOffset(fm, text.toCharArray(), tokenStartOffset, tokenStartOffset, tokenEndOffset, x0, x);
+		int actual = AbstractTokenViewModelConverter.
+			getListOffset(fm, text.toCharArray(), tokenStartOffset, tokenStartOffset, tokenEndOffset, x0, x);
 		assertListOffsetEquals(text, x, expected, actual);
 	}
 
 	static void assertListOffsetEquals(String text, float x, int expectedOffset, int actualOffset, Object... extra) {
-		String expectedCharacter = expectedOffset < 0 || expectedOffset >= text.length()
-			? null
-			: escape(text.substring(expectedOffset, expectedOffset + 1));
-		String actualCharacter = actualOffset < 0 || actualOffset >= text.length()
-			? null
-			: escape(text.substring(actualOffset, actualOffset + 1));
+		String expectedCharacter = expectedOffset < 0 || expectedOffset >= text.length() ?
+			null : escape(text.substring(expectedOffset, expectedOffset + 1));
+		String actualCharacter = actualOffset < 0 || actualOffset >= text.length() ?
+			null : escape(text.substring(actualOffset, actualOffset + 1));
 
-		String truncatedText = text.length() < 40
-			? text
-			: String.format("'%s...%s'[%,d]", text.substring(0, 15), text.substring(text.length() - 15), text.length());
-		String moreInfo = extra.length<1 ? "" : Arrays.toString(extra);
-		String msg = String.format("x=%.3f - Expected: %,d ('%s') | Actual: %,d ('%s') | Text: '%s' %s",
-			x, expectedOffset, expectedCharacter, actualOffset, actualCharacter, escape(truncatedText), moreInfo);
+		String truncatedText = text.length() < 40 ? text : String.format("'%s...%s'[%,d]",
+							text.substring(0, 15), text.substring(text.length() - 15), text.length());
+		String moreInfo = extra.length < 1 ? "" : Arrays.toString(extra);
+		String msg = String.format("x=%.3f - Expected: %,d ('%s') | Actual: %,d ('%s') | Text: '%s' %s", x
+			, expectedOffset, expectedCharacter, actualOffset, actualCharacter, escape(truncatedText), moreInfo);
 		Assertions.assertEquals(expectedOffset, actualOffset, msg);
 	}
 
 	private static String escape(String s) {
-		return s.replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r");
+		return s.replace("\t", "\\t")
+			.replace("\n", "\\n").replace("\r", "\\r");
 	}
 
 
@@ -98,11 +103,6 @@ public class AbstractTokenViewModelConverterTest {
 			this.averageCharacterWidth = averageCharacterWidth;
 			this.proportionalFont = proportionalFont;
 			this.font = new MyFont(10);
-		}
-
-		@Override
-		public Font getFont() {
-			return font;
 		}
 
 		@Override
@@ -126,7 +126,7 @@ public class AbstractTokenViewModelConverterTest {
 		}
 
 		private class MyFont extends Font {
-			public MyFont(int size) {
+			MyFont(int size) {
 				super("TEST", PLAIN, size);
 			}
 
@@ -144,7 +144,7 @@ public class AbstractTokenViewModelConverterTest {
 	static class MyTabExpander implements TabExpander {
 		private final float relativeDistanceToNextTabStop;
 
-		public MyTabExpander(float fixedDistanceToNextTabStop) {
+		MyTabExpander(float fixedDistanceToNextTabStop) {
 			this.relativeDistanceToNextTabStop = fixedDistanceToNextTabStop;
 		}
 
@@ -155,7 +155,7 @@ public class AbstractTokenViewModelConverterTest {
 	}
 
 	static class MyRSyntaxTextArea extends RSyntaxTextArea {
-		public MyRSyntaxTextArea(String text) {
+		MyRSyntaxTextArea(String text) {
 			super(text);
 		}
 

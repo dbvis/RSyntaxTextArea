@@ -1,12 +1,21 @@
+/*
+ * This library is distributed under a modified BSD license.  See the included
+ * LICENSE file for details.
+ */
 package org.fife.ui.rsyntaxtextarea;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 import javax.swing.text.TabExpander;
 
 import static org.fife.ui.rsyntaxtextarea.AbstractTokenViewModelConverterTest.assertListOffsetEquals;
 
+/**
+ * Unit tests for the {@code BufferedTokenViewModelConverterTest} class.
+ *
+ * @author Peer
+ * @version 1.0
+ */
 public class BufferedTokenViewModelConverterTest {
 
 	@Test
@@ -20,7 +29,7 @@ public class BufferedTokenViewModelConverterTest {
 		doTestGetListOffset(5);
 	}
 
-	private static float doTestGetListOffset(int chunkSize) {
+	private static void doTestGetListOffset(int chunkSize) {
 		String text = "0123456789";
 		float xOffset = 0;
 
@@ -60,7 +69,6 @@ public class BufferedTokenViewModelConverterTest {
 		assertGetListOffset(text, 0, xOffset, 5.9f, chunkSize);
 		assertGetListOffset(text, 9, xOffset, 95f, chunkSize);
 		assertGetListOffset(text, 9, xOffset, 95.9f, chunkSize);
-		return xOffset;
 	}
 
 	private static void assertGetListOffset(String text, int expected, float x0, float x, int chunkSize) {

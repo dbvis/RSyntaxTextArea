@@ -15,31 +15,17 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.io.*;
 import java.awt.font.TextAttribute;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Enumeration;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
-import java.util.Map;
-
-import org.fife.ui.rtextarea.FoldIndicatorStyle;
-import org.fife.ui.rtextarea.Gutter;
-import org.fife.ui.rtextarea.RTextScrollPane;
-import org.fife.ui.rtextarea.LineNumberFormatter;
-import org.fife.ui.rtextarea.LineNumberList;
 
 
 /**
@@ -52,8 +38,8 @@ import org.fife.ui.rtextarea.LineNumberList;
 public class DemoRootPane extends JRootPane implements HyperlinkListener,
 											SyntaxConstants {
 
-	private RTextScrollPane scrollPane;
-	private RSyntaxTextArea textArea;
+	private final RTextScrollPane scrollPane;
+	private final RSyntaxTextArea textArea;
 
 
 	DemoRootPane() {
@@ -262,13 +248,13 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		fontCombo.addItemListener(e -> textArea.setFont(deriveFont((Font) e.getItem(), fontSize)));
 		fontCombo.setRenderer((list, font, index, isSelected, cellHasFocus) -> new JLabel(font.getFontName()));
 		fillFontCombo(fontCombo, mono.isSelected());
-		mono.addItemListener(evt->fillFontCombo(fontCombo, mono.isSelected()));
+		mono.addItemListener(evt -> fillFontCombo(fontCombo, mono.isSelected()));
 
 		JComboBox<Class<?>> converterCombo = new JComboBox<>();
 		converterCombo.addItemListener(e ->
 			System.setProperty(TokenViewModelConverter.PROPERTY_CONVERTER_CLASS, ((Class<?>) e.getItem()).getName()));
 		converterCombo.setRenderer((list, converter, index, isSelected, cellHasFocus) ->
-			new JLabel(converter.getSimpleName()));
+									   new JLabel(converter.getSimpleName()));
 		converterCombo.addItem(BufferedTokenViewModelConverter.class);
 		converterCombo.addItem(DefaultTokenViewModelConverter.class);
 		converterCombo.setSelectedIndex(0);
@@ -367,7 +353,7 @@ public class DemoRootPane extends JRootPane implements HyperlinkListener,
 		textArea.setMarkOccurrences(true);
 		textArea.setCodeFoldingEnabled(true);
 		textArea.setClearWhitespaceLinesEnabled(false);
-		addPropertyChangeListener(evt->textArea.onGraphicsChange());
+		addPropertyChangeListener(evt -> textArea.onGraphicsChange());
 
 		InputMap im = textArea.getInputMap();
 		ActionMap am = textArea.getActionMap();

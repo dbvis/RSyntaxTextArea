@@ -89,7 +89,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		}
 
 		// If we didn't find anything, return the end position of the text.
-		LOG.fine(()->"EOL");
+		LOG.fine(() -> "EOL");
 		return last;
 	}
 
@@ -138,8 +138,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 				return rect; // Don't return null as things will error.
 			}
 			char[] text = token.text;
-			int start = token.textOffset;
-			int end = start + token.textCount;
+			int end;
 
 			// If this token contains the position for which to get the bounding box...
 			if (token.containsPosition(pos)) {
@@ -193,7 +192,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 	 * characters (<code>'\t'</code>).
 	 * <p/>
 	 * Designed for {@link TokenImpl#getListOffset(RSyntaxTextArea, TabExpander, float, float)} to improve performance
-	 * on very long text strings (eg hex dumps of images or single line JSON documents).
+	 * on very long text strings (e.g. hex dumps of images or single line JSON documents).
 	 *
 	 * @param fm    FontMetrics for the token font
 	 * @param chars the array of text to process
@@ -210,7 +209,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 
 		// found exact position?
 		if (len<2) {
-			LOG.finest(()-> String.format("Found: x=%,.3f => offset=%,d ('%s')", x, off, chars[off]));
+			LOG.finest(() -> String.format("Found: x=%,.3f => offset=%,d ('%s')", x, off, chars[off]));
 			return off;
 		}
 
@@ -251,8 +250,7 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		Font font = fm.getFont();
 		int limit = begin + count;
 		Rectangle2D bounds = font.getStringBounds(chars, begin, limit, frc);
-		double dw = bounds.getWidth();
-		return dw;
+		return bounds.getWidth();
 	}
 
 	private static String debugListOffsetRecursiveCall(char[] chars, String info, int first, int last, int nextLen) {
@@ -283,18 +281,14 @@ public abstract class AbstractTokenViewModelConverter implements TokenViewModelC
 		Character.UnicodeScript script = Character.UnicodeScript.of(c);
 
 		// TODO improve - is there a robust approach to detect wide characters without calling FontMetrics?
-		switch (script) {
-			case CYRILLIC:
-			case GREEK:
-			case LATIN:
-				return false;
-			case COMMON:
-				return (int)c>255;
-
-			default:
-				LOG.finest(()->String.format("'%c' wide (%s), value=%,d%n", c, script, (int)c));
-				return true;
-		}
+		return switch (script) {
+			case CYRILLIC, GREEK, LATIN -> false;
+			case COMMON -> (int) c > 255;
+			default -> {
+				LOG.finest(() -> String.format("'%c' wide (%s), value=%,d%n", c, script, (int) c));
+				yield true;
+			}
+		};
 	}
 
 	protected void logConversion(char foundInCharacter, int resultingOffset) {
