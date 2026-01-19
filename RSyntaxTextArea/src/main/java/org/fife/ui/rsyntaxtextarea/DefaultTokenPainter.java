@@ -279,8 +279,9 @@ public class DefaultTokenPainter implements TokenPainter { // DBVIS-5813 Make cl
 			endX++;
 		}
 		while (x0<endX) {
-			float y1 = y0;
-			float y2 = y0 + host.getLineHeight();
+			// DBVIS-12497: use doubles since float may have too little precision
+			double y1 = y0;
+			double y2 = y0 + host.getLineHeight();
 			while (y1<y2) {
 				SwingUtils.drawLine(g, x0, y1, x0, y1);
 				y1 += 2;
