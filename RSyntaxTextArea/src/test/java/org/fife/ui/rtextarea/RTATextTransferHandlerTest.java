@@ -99,6 +99,45 @@ class RTATextTransferHandlerTest {
 
 
 	@Test
+	void testExportDone_copyWithinSameComponent_dropUndoesAsOneEdit() {
+
+		RTextArea textArea = dragWithinSameComponent(RTATextTransferHandler.COPY);
+
+		Assertions.assertEquals("Hello worldHello", textArea.getText());
+		textArea.undoLastAction();
+		Assertions.assertEquals("Hello world", textArea.getText());
+	}
+
+
+	@Test
+	void testExportDone_moveWithinSameComponent_dropAndRemovalUndoAsOneEdit() {
+
+		RTextArea textArea = dragWithinSameComponent(RTATextTransferHandler.MOVE);
+
+		Assertions.assertEquals(" worldHello", textArea.getText());
+		textArea.undoLastAction();
+		Assertions.assertEquals("Hello world", textArea.getText());
+	}
+
+
+	private static RTextArea dragWithinSameComponent(int action) {
+
+		RTextArea textArea = new RTextArea();
+		textArea.setText("Hello world");
+		textArea.discardAllEdits();
+		textArea.setSelectionStart(0);
+		textArea.setSelectionEnd(5);
+
+		RTATextTransferHandler handler = new RTATextTransferHandler();
+		Transferable transferable = handler.createTransferable(textArea);
+		textArea.setCaretPosition(11); // Outside the prior selection
+		Assertions.assertTrue(handler.importData(textArea, transferable));
+		handler.exportDone(textArea, transferable, action);
+		return textArea;
+	}
+
+
+	@Test
 	void testCanImport_falseSinceNotEditable() {
 
 		Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());

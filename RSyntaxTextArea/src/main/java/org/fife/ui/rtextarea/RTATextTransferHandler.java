@@ -48,6 +48,7 @@ public class RTATextTransferHandler extends TransferHandler {
 	private int p0;
 	private int p1;
 	protected boolean withinSameComponent;
+	private boolean importAtomicEditOpen;
 
 
 	/**
@@ -182,6 +183,7 @@ public class RTATextTransferHandler extends TransferHandler {
 
 		if (withinSameComponent) {
 			((RTextArea)c).beginAtomicEdit();
+			importAtomicEditOpen = true;
 		}
 
 		if (lastWasCR) {
@@ -249,15 +251,32 @@ public class RTATextTransferHandler extends TransferHandler {
 		if (shouldRemove && action == MOVE) {
 			TextTransferable t = (TextTransferable)data;
 			t.removeText();
-			if (withinSameComponent) {
-				((RTextArea)source).endAtomicEdit();
-				withinSameComponent = false;
-			}
 		}
+		endImportAtomicEdit(source);
 		exportComp = null;
 		if (data instanceof TextTransferable) {
 			ClipboardHistory.get().add(((TextTransferable)data).getPlainData());
 		}
+	}
+
+
+	/**
+	 * Ends the atomic edit that a drop into the component the text was
+	 * dragged from begins, so that the drop and the removal of the dragged
+	 * text undo as one edit.  It must end whatever the drop action was: a copy
+	 * removes nothing but still began it, and an atomic edit left open makes
+	 * every later edit in the text area part of it.
+	 *
+	 * DBVIS-13867 -> protected for subclass overriding method exportDone
+	 *
+	 * @param source The component that was the source of the data.
+	 */
+	protected void endImportAtomicEdit(JComponent source) {
+		if (importAtomicEditOpen) {
+			importAtomicEditOpen = false;
+			((RTextArea)source).endAtomicEdit();
+		}
+		withinSameComponent = false;
 	}
 
 
