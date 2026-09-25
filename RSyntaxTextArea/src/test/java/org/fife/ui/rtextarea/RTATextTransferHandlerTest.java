@@ -28,7 +28,6 @@ class RTATextTransferHandlerTest {
 
 	@Test
 	void testCreateTransferable_noSelection() {
-
 		JTextArea textArea = new JTextArea("Hello world");
 		Assertions.assertNull(new RTATextTransferHandler().createTransferable(textArea));
 	}
@@ -36,7 +35,6 @@ class RTATextTransferHandlerTest {
 
 	@Test
 	void testCreateTransferable_selection() {
-
 		JTextArea textArea = new JTextArea("Hello world\r\nLine 2");
 		textArea.setSelectionStart(2);
 		textArea.setSelectionEnd(7);
@@ -67,7 +65,6 @@ class RTATextTransferHandlerTest {
 
 	@Test
 	void testImportData_happyPath() {
-
 		JTextArea sourceArea = new JTextArea("Hello world\r\nLine 2");
 		sourceArea.setSelectionStart(2);
 		sourceArea.setSelectionEnd(16);
@@ -84,7 +81,6 @@ class RTATextTransferHandlerTest {
 
 	@Test
 	void testImportData_withinSameComponentAndSelectionRange() {
-
 		JTextArea sourceArea = new JTextArea("Hello world");
 		sourceArea.setSelectionStart(2);
 		sourceArea.setSelectionEnd(7);
@@ -99,8 +95,43 @@ class RTATextTransferHandlerTest {
 
 
 	@Test
-	void testCanImport_falseSinceNotEditable() {
+	void testExportDone_copyWithinSameComponent_dropUndoesAsOneEdit() {
+		RTextArea textArea = dragWithinSameComponent(RTATextTransferHandler.COPY);
 
+		Assertions.assertEquals("Hello worldHello", textArea.getText());
+		textArea.undoLastAction();
+		Assertions.assertEquals("Hello world", textArea.getText());
+	}
+
+
+	@Test
+	void testExportDone_moveWithinSameComponent_dropAndRemovalUndoAsOneEdit() {
+		RTextArea textArea = dragWithinSameComponent(RTATextTransferHandler.MOVE);
+
+		Assertions.assertEquals(" worldHello", textArea.getText());
+		textArea.undoLastAction();
+		Assertions.assertEquals("Hello world", textArea.getText());
+	}
+
+
+	private static RTextArea dragWithinSameComponent(int action) {
+		RTextArea textArea = new RTextArea();
+		textArea.setText("Hello world");
+		textArea.discardAllEdits();
+		textArea.setSelectionStart(0);
+		textArea.setSelectionEnd(5);
+
+		RTATextTransferHandler handler = new RTATextTransferHandler();
+		Transferable transferable = handler.createTransferable(textArea);
+		textArea.setCaretPosition(11); // Outside the prior selection
+		Assertions.assertTrue(handler.importData(textArea, transferable));
+		handler.exportDone(textArea, transferable, action);
+		return textArea;
+	}
+
+
+	@Test
+	void testCanImport_falseSinceNotEditable() {
 		Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());
 
 		Assertions.assertFalse(canImportImpl(false, DataFlavor.stringFlavor));
@@ -110,7 +141,6 @@ class RTATextTransferHandlerTest {
 
 	@Test
 	void testCanImport_happyPath() {
-
 		Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());
 
 		Assertions.assertTrue(canImportImpl(true, DataFlavor.stringFlavor));
@@ -119,7 +149,6 @@ class RTATextTransferHandlerTest {
 
 
 	private boolean canImportImpl(boolean editable, DataFlavor flavor) {
-
 		JTextArea textArea = new JTextArea("Hello world");
 		textArea.setSelectionStart(2);
 		textArea.setSelectionEnd(7);
